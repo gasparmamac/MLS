@@ -1,0 +1,52 @@
+{% extends 'bootstrap/base.html' %}
+{% block styles %}
+    {{super()}}
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block content %}
+  <!--  Navbar-->
+  <nav class="navbar navbar-expand-sm navbar-light bg-light">
+  <div class="container">
+    <a class="navbar-brand" href="#">MLS</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarTogglerDemo02" aria-controls="navbarTogglerDemo02" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarTogglerDemo02">
+      <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+        </li>
+         <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('login') }}">login</a>
+        </li>
+         <li class="nav-item">
+          <a class="nav-link disabled" href="#">Link</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+  </nav>
+{% endblock %}
+
+{% block scripts %}
+    {{super()}}
+    <!-- Bootstrap Bundle with Popper-->
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js')}}"></script>
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+

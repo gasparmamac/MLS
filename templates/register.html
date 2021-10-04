@@ -1,0 +1,18 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title%}Register{% endblock %}
+
+{% block content%}
+    {% include 'header.html' %}
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 col-md-10 col-sm-6 mx-auto my-5">
+                {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+{% endblock%}
+
