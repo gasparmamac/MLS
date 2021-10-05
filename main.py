@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, abort
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm
+from forms import LoginForm, RegisterForm, DispatchForm
 import os
 
 app = Flask(__name__)
@@ -54,6 +54,12 @@ def register():
 def login():
     form = LoginForm()
     return render_template("login.html", form=form)
+
+
+@app.route("/dispatch", methods=["Get", "Post"])
+def dispatch():
+    form = DispatchForm()
+    return render_template("dispatch.html", form=form)
 
 
 if __name__ == "__main__":

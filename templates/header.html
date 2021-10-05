@@ -23,11 +23,20 @@
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('register') }}">Register</a>
         </li>
-         <li class="nav-item">
+        <li class="nav-item">
           <a class="nav-link" href="{{ url_for('login') }}">login</a>
         </li>
-         <li class="nav-item">
-          <a class="nav-link disabled" href="#">Link</a>
+
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Encode
+          </a>
+          <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item" href="{{ url_for('dispatch') }}">Dispatch</a></li>
+            <li><a class="dropdown-item" href="#">Maintenance Expenses</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item disabled" href="#">Something else here</a></li>
+          </ul>
         </li>
       </ul>
     </div>
