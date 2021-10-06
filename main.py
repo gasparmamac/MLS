@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, abort
+from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
@@ -21,11 +21,13 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
-    name = db.Column(db.String(100))
+    first_name = db.Column(db.String(100))
+    middle_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
 
 
 # Run only once
-db.create_all()
+# db.create_all()
 
 # User login
 login_manager = LoginManager()
@@ -47,6 +49,24 @@ def home():
 @app.route("/register", methods=["Get", "Post"])
 def register():
     form = RegisterForm()
+    if form.validate_on_submit():
+
+        # Confirm if the registrant is not on the database
+        if User.query.filter_by(email=form.email.data).first():
+            print('Hello')
+            flash(f"This email: {form.email.data} is already registered.")
+            return redirect(url_for("register"))
+
+        # Add new user to the database
+        new_user = User(
+            email=form.email.data,
+            first_name=form.first_name.data,
+            middle_name=form.middle_name.data,
+            last_name=form.last_name.data,
+            password=form.password.data
+        )
+        db.session.add(new_user)
+        db.session.commit()
     return render_template("register.html", form=form)
 
 

@@ -9,7 +9,17 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col col-lg-5 col-md-8 px-5 g-5">
+
+                <!-- Registrant exist on db messages-->
+                  {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <p class="mb-5 text-align-center text-danger">{{ message }} Do you want to <a href="{{ url_for('login') }}">Login?</a></p>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
                 {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+
             </div>
         </div>
     </div>
