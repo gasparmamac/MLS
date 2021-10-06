@@ -6,7 +6,9 @@
     {% include 'header.html' %}
 
 <!--content here-->
-
+{% if current_user.is_authenticated %}
+  Hi {{ current_user.first_name }}
+{% endif %}
 
 
     {% include 'footer.html' %}

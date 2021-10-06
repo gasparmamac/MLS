@@ -5,7 +5,7 @@ from wtforms.fields.html5 import DateField
 
 
 class LoginForm(FlaskForm):
-    user_name = StringField('User name', validators=[DataRequired()])
+    email = StringField('Email', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
 
