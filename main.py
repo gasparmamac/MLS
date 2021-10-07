@@ -1,10 +1,12 @@
 from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
-from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager,fresh_login_required, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 from forms import LoginForm, RegisterForm, DispatchForm
+from datetime import date
+from sqlalchemy.orm import relationship
 import os
 
 app = Flask(__name__)
@@ -26,10 +28,30 @@ class User(UserMixin, db.Model):
     first_name = db.Column(db.String(100))
     middle_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
+    dispatch = relationship("Dispatch", back_populates="encoder")
+
+
+class Dispatch(UserMixin, db.Model):
+    __tablename__ = "dispatch"
+    id = db.Column(db.Integer, primary_key=True)
+    dispatch_date = db.Column(db.String(100), nullable=False)
+    slip_no = db.Column(db.String(100), nullable=False)
+    route = db.Column(db.String(100), nullable=False)
+    cbm = db.Column(db.String(100), nullable=False)
+    qty = db.Column(db.String(100), nullable=False)
+    drops = db.Column(db.String(100), nullable=False)
+    rate = db.Column(db.String(100), nullable=False)
+    plate_no = db.Column(db.String(100), nullable=False)
+    driver = db.Column(db.String(100), nullable=False)
+    courier = db.Column(db.String(100), nullable=False)
+    encoded_on = db.Column(db.String(100), nullable=False)
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("User", back_populates="dispatch")
+    invoice_no = db.Column(db.String(100))
 
 
 # Run only once
-db.create_all()
+# db.create_all()
 
 # User login manager
 login_manager = LoginManager()
@@ -101,10 +123,9 @@ def login():
         # check login data
         user = User.query.filter_by(email=email).first()
         if not user:
-            flash(f"This email: {email} does not exist. Kindly try again.")
+            flash(f"This email: ' {email} ' does not exist. Kindly try again.")
             return redirect(url_for("login"))
         elif not check_password_hash(user.password, password):
-            print(user.password)
             flash("Incorrect password.")
             return redirect(url_for("login"))
         else:
@@ -113,17 +134,46 @@ def login():
     return render_template("login.html", form=form)
 
 
-@app.route("/login", methods=["Get", "Post"])
-# @login_required
+@app.route("/logout", methods=["Get", "Post"])
+@login_required
 def logout():
-    load_user()
+    logout_user()
     return redirect(url_for("home"))
 
 
 @app.route("/dispatch", methods=["Get", "Post"])
+@fresh_login_required
+@admin_only
 def dispatch():
     form = DispatchForm()
+    if form.validate_on_submit():
+        # Add new dispatch to database
+        new_dispatch = Dispatch(
+            dispatch_date=form.dispatch_date.data,
+            slip_no=form.slip_no.data,
+            route=form.route.data,
+            cbm=form.cbm.data,
+            qty=form.cbm.data,
+            drops=form.drops.data,
+            rate=form.rate.data,
+            plate_no=form.plate_no.data,
+            driver=form.driver.data,
+            courier=form.courier.data,
+            encoded_on=date.today().strftime("%B %d, %Y"),
+            encoder=current_user,
+        )
+        db.session.add(new_dispatch)
+        db.session.commit()
+        return redirect(url_for("dispatch_report"))
     return render_template("dispatch.html", form=form)
+
+
+@app.route("/dispatch_report", methods=["Get", "Post"])
+@fresh_login_required
+@admin_only
+def dispatch_report():
+    dispatches = Dispatch.query.all()
+    return render_template("dispatch_report.html", dispatches=dispatches)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,46 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}Dispatch Report{% endblock %}
+
+{% block content %}
+
+    {% include 'header.html' %}
+
+    <!--content start here-->
+    <h1>All Dispatch</h1>
+
+    <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Dispatch date</th>
+                    <th scope="col">Slip no</th>
+                    <th scope="col">Plate no</th>
+                    <th scope="col">Route</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Cbm</th>
+                    <th scope="col">Drops</th>
+                    <th scope="col">Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for dispatch in dispatches %}
+                <tr>
+                    <th scope="row">{{ dispatch.id }}</th>
+                    <td>{{ dispatch.dispatch_date }}</td>
+                    <td>{{ dispatch.slip_no }}</td>
+                    <td>{{ dispatch.plate_no }}</td>
+                    <td>{{ dispatch.route }}</td>
+                    <td>{{ dispatch.qty }}</td>
+                    <td>{{ dispatch.cbm }}</td>
+                    <td>{{ dispatch.drops }}</td>
+                    <td>{{ dispatch.encoder.first_name }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+    <!--content end-->
+    {% include 'footer.html' %}
+{% endblock  %}

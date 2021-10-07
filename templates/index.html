@@ -4,13 +4,15 @@
 
 {% block content %}
     {% include 'header.html' %}
+    <!--content start here-->
 
-<!--content here-->
-{% if current_user.is_authenticated %}
-  Hi {{ current_user.first_name }}
-{% endif %}
+    {% if current_user.is_authenticated %}
+        <h1>Welcome {{ current_user.first_name }} {{ current_user.last_name }} </h1>
+    {% else %}
+        <h1>Please login</h1>
+    {% endif %}
 
-
+    <!--content end-->
     {% include 'footer.html' %}
 {% endblock  %}
 
