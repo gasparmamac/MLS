@@ -3,14 +3,19 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-    {% include 'header.html' %}
-    <!--content start here-->
 
-    {% if current_user.is_authenticated %}
-        <h1>Welcome {{ current_user.first_name }} {{ current_user.last_name }} </h1>
-    {% else %}
-        <h1>Please login</h1>
-    {% endif %}
+    {% include 'header.html' %}
+
+    <!--content start here-->
+    <div class="container">
+        <h2>Dispatch data</h2>
+        <div class="row">
+            <div class="col">
+                {{ table|safe }}
+            </div>
+        </div>
+    </div>
+
 
     <!--content end-->
     {% include 'footer.html' %}

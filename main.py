@@ -7,7 +7,13 @@ from flask_sqlalchemy import SQLAlchemy
 from forms import LoginForm, RegisterForm, DispatchForm
 from datetime import date
 from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
 import os
+
+import pandas as pd
+
+# pandas options
+pd.options.display.float_format = '{:,.2f}'.format
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(12)
@@ -76,8 +82,16 @@ def admin_only(f):
 # My apps ----------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    users = User.query.all()
-    return render_template("index.html", users=users)
+    # Convert dispatch table into Dataframe
+    with create_engine('sqlite:///mls_operation.db').connect() as cnx:
+        dispatch_df = pd.read_sql_table(table_name="dispatch", con=cnx)
+
+        # Sort dataframe
+        table_all = dispatch_df.sort_values("dispatch_date", ascending=False).to_html(
+            classes='table table-striped table-hover table-sm',
+            header="false",
+            justify="left")
+    return render_template("index.html", table=table_all)
 
 
 @app.route("/register", methods=["Get", "Post"])
