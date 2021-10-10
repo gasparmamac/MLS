@@ -20,7 +20,7 @@ app.config['SECRET_KEY'] = os.urandom(12)
 Bootstrap(app)
 
 # Connect to database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///mls_operation.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -84,7 +84,7 @@ def admin_only(f):
 def home():
     # Filter form
     form = TableFilterForm()
-    with create_engine('sqlite:///mls_operation.db').connect() as cnx:
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
         # Sort and filter dataframe
