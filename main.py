@@ -84,19 +84,26 @@ def admin_only(f):
 def home():
     # Filter form
     form = TableFilterForm()
+    with create_engine('sqlite:///mls_operation.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="dispatch", con=cnx)
+
+        # Sort and filter dataframe
+        table = df.to_html(
+            classes='table table-striped table-hover table-sm',
+            header="false",
+            justify="left")
+
     if form.validate_on_submit():
-
-        # Convert dispatch table into Dataframe
-        with create_engine('sqlite:///mls_operation.db').connect() as cnx:
-            dispatch_df = pd.read_sql_table(table_name="dispatch", con=cnx)
-
-            # Sort and filter dataframe
-            table = dispatch_df.sort_values(form.filter.data, ascending=True).to_html(
-                classes='table table-striped table-hover table-sm',
-                header="false",
-                justify="left")
-            return render_template("index.html", form=form, table=table)
-    return render_template("index.html", form=form)
+        # Sort and filter dataframe
+        start = form.date_start.data
+        end = form.date_end.data
+        index = form.filter.data
+        table = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False).to_html(
+            classes='table table-striped table-hover table-sm',
+            header="true",
+            justify="left")
+        return render_template("index.html", form=form, table=table)
+    return render_template("index.html", form=form, table=table)
 
 
 @app.route("/register", methods=["Get", "Post"])
@@ -178,7 +185,7 @@ def dispatch():
             plate_no=form.plate_no.data,
             driver=form.driver.data,
             courier=form.courier.data,
-            encoded_on=date.today().strftime("%B %d, %Y"),
+            encoded_on=date.today(),
             encoder=current_user,
         )
         db.session.add(new_dispatch)

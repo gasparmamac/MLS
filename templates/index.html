@@ -11,7 +11,18 @@
     <div class="container">
         <h2>Dispatch data</h2>
         <!--    Filter form-->
-    {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
+        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
+        <div class="row">
+            <div class="col">
+                {{ table|safe }}
+            </div>
+        </div>
+    </div>
+
+     <div class="container mt-5">
+        <h2>Payslip generator</h2>
+        <!--    Filter form-->
+        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
         <div class="row">
             <div class="col">
                 {{ table|safe }}
