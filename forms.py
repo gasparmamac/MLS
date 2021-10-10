@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField
+from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField
 from wtforms.validators import DataRequired
 from wtforms.fields.html5 import DateField
 
@@ -31,4 +31,15 @@ class DispatchForm(FlaskForm):
     driver = StringField("Driver", validators=[DataRequired()])
     courier = StringField("Courier", validators=[DataRequired()])
     submit = SubmitField("Submit")
+
+
+class TableFilterForm(FlaskForm):
+    filter = SelectField("Filter by:", choices=[
+        ("dispatch_date", "Dispatch date"),
+        ("encoded_on", "Encoded date"),
+        ("invoice_no", "Invoice no")])
+    date_start = DateField("From")
+    date_end = DateField("To")
+    submit = SubmitField("Apply filter")
+
 

@@ -6,9 +6,12 @@
 
     {% include 'header.html' %}
 
-    <!--content start here-->
+
+<!--    Dispatch table-->
     <div class="container">
         <h2>Dispatch data</h2>
+        <!--    Filter form-->
+    {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
         <div class="row">
             <div class="col">
                 {{ table|safe }}
@@ -16,9 +19,8 @@
         </div>
     </div>
 
-
-    <!--content end-->
     {% include 'footer.html' %}
+
 {% endblock  %}
 
 

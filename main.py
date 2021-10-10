@@ -4,7 +4,7 @@ from flask_login import UserMixin, login_user, LoginManager,fresh_login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm, DispatchForm
+from forms import LoginForm, RegisterForm, DispatchForm, TableFilterForm
 from datetime import date
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -82,16 +82,21 @@ def admin_only(f):
 # My apps ----------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    # Convert dispatch table into Dataframe
-    with create_engine('sqlite:///mls_operation.db').connect() as cnx:
-        dispatch_df = pd.read_sql_table(table_name="dispatch", con=cnx)
+    # Filter form
+    form = TableFilterForm()
+    if form.validate_on_submit():
 
-        # Sort dataframe
-        table_all = dispatch_df.sort_values("dispatch_date", ascending=False).to_html(
-            classes='table table-striped table-hover table-sm',
-            header="false",
-            justify="left")
-    return render_template("index.html", table=table_all)
+        # Convert dispatch table into Dataframe
+        with create_engine('sqlite:///mls_operation.db').connect() as cnx:
+            dispatch_df = pd.read_sql_table(table_name="dispatch", con=cnx)
+
+            # Sort and filter dataframe
+            table = dispatch_df.sort_values(form.filter.data, ascending=True).to_html(
+                classes='table table-striped table-hover table-sm',
+                header="false",
+                justify="left")
+            return render_template("index.html", form=form, table=table)
+    return render_template("index.html", form=form)
 
 
 @app.route("/register", methods=["Get", "Post"])
