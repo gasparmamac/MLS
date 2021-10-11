@@ -51,6 +51,7 @@ class Dispatch(UserMixin, db.Model):
     driver = db.Column(db.String(100), nullable=False)
     courier = db.Column(db.String(100), nullable=False)
     encoded_on = db.Column(db.String(100), nullable=False)
+    encoded_by = db.Column(db.String(100))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("User", back_populates="dispatch")
     invoice_no = db.Column(db.String(100))
@@ -82,28 +83,7 @@ def admin_only(f):
 # My apps ----------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    # Filter form
-    form = TableFilterForm()
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
-        df = pd.read_sql_table(table_name="dispatch", con=cnx)
-
-        # Sort and filter dataframe
-        table = df.to_html(
-            classes='table table-striped table-hover table-sm',
-            header="false",
-            justify="left")
-
-    if form.validate_on_submit():
-        # Sort and filter dataframe
-        start = form.date_start.data
-        end = form.date_end.data
-        index = form.filter.data
-        table = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False).to_html(
-            classes='table table-striped table-hover table-sm',
-            header="true",
-            justify="left")
-        return render_template("index.html", form=form, table=table)
-    return render_template("index.html", form=form, table=table)
+    return render_template("index.html")
 
 
 @app.route("/register", methods=["Get", "Post"])
@@ -168,9 +148,9 @@ def logout():
 
 
 @app.route("/dispatch", methods=["Get", "Post"])
-@fresh_login_required
-@admin_only
-def dispatch():
+# @fresh_login_required
+# @admin_only
+def input_dispatch():
     form = DispatchForm()
     if form.validate_on_submit():
         # Add new dispatch to database
@@ -186,20 +166,72 @@ def dispatch():
             driver=form.driver.data,
             courier=form.courier.data,
             encoded_on=date.today(),
-            encoder=current_user,
+            encoded_by=current_user.first_name,
+            encoder=current_user
         )
         db.session.add(new_dispatch)
         db.session.commit()
         return redirect(url_for("dispatch_report"))
-    return render_template("dispatch.html", form=form)
+    return render_template("input_dispatch.html", form=form)
 
 
 @app.route("/dispatch_report", methods=["Get", "Post"])
-@fresh_login_required
-@admin_only
-def dispatch_report():
-    dispatches = Dispatch.query.all()
-    return render_template("dispatch_report.html", dispatches=dispatches)
+# @fresh_login_required
+# @admin_only
+def dispatch():
+    # create table filter form
+    form = TableFilterForm()
+
+    # Get all dispatch data from database
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        raw_df = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx,
+            index_col=None,
+            parse_dates=["dispatch_date", "encoded_on"],
+            columns=["id", "invoice_no", "dispatch_date", "slip_no", "plate_no", "cbm", "qty", "drops", "route", "driver", "courier",
+                     "encoded_by", "encoded_on"],
+        )
+
+        # Show latest 20 dispatch
+        clean_df = raw_df.head(n=3).sort_values("dispatch_date", ascending=False)
+        table_disp = clean_df.to_html(
+            index=False,
+            classes='table table-striped table-hover table-sm',
+            header="false",
+            justify="left")
+
+        # Table for OpEx
+        table_opex = clean_df.groupby(["plate_no", "driver", "courier"]).count().to_html(
+            index=False,
+            classes='table table-striped table-hover table-sm',
+            header="true",
+            justify="left")
+
+    if form.validate_on_submit():
+        # Sort and filter dataframe
+        start = form.date_start.data
+        end = form.date_end.data
+        index = form.filter.data
+
+        # Table for dispatch
+        filtered_df = clean_df[(clean_df[index] >= str(start)) & (clean_df[index] <= str(end))]
+        table_disp = filtered_df.sort_values(index, ascending=False).to_html(
+            index=False,
+            classes='table table-striped table-hover table-sm',
+            header="true",
+            justify="left")
+
+        # Table for OpEx
+        table_opex = filtered_df.groupby(["plate_no", "driver", "courier"]).count().to_html(
+            index=False,
+            classes='table table-striped table-hover table-sm',
+            header="true",
+            justify="left")
+
+        return render_template("dispatch_report.html", form=form, table_disp=table_disp, table_opex=table_opex)
+
+    return render_template("dispatch_report.html", form=form, table_disp=table_disp, table_opex=table_opex)
 
 
 if __name__ == "__main__":

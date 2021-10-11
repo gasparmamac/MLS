@@ -36,8 +36,7 @@ class DispatchForm(FlaskForm):
 class TableFilterForm(FlaskForm):
     filter = SelectField("Filter by:", choices=[
         ("dispatch_date", "Dispatch date"),
-        ("encoded_on", "Encoded date"),
-        ("invoice_no", "Invoice no")])
+        ("encoded_on", "Encoded date")])
     date_start = DateField("From")
     date_end = DateField("To")
     submit = SubmitField("Apply filter")

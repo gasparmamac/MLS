@@ -5,30 +5,20 @@
 {% block content %}
 
     {% include 'header.html' %}
-
-
-<!--    Dispatch table-->
     <div class="container">
-        <h2>Dispatch data</h2>
-        <!--    Filter form-->
-        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
-        <div class="row">
+        <div class="row align-text-center">
             <div class="col">
-                {{ table|safe }}
+                {% if current_user.is_authenticated %}
+                    <h1>This is your homepage {{ current_user.first_name }}</h1>
+                {% else %}
+                    <h1>You are not logged in.</h1>
+
+                {% endif %}
+
             </div>
         </div>
     </div>
 
-     <div class="container mt-5">
-        <h2>Payslip generator</h2>
-        <!--    Filter form-->
-        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
-        <div class="row">
-            <div class="col">
-                {{ table|safe }}
-            </div>
-        </div>
-    </div>
 
     {% include 'footer.html' %}
 
