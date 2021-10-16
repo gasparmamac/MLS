@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField
 from wtforms.validators import DataRequired
-from wtforms.fields.html5 import DateField
+from wtforms.fields.html5 import DateField, DateTimeField
 
 
 class LoginForm(FlaskForm):
@@ -22,7 +22,10 @@ class RegisterForm(FlaskForm):
 class DispatchForm(FlaskForm):
     dispatch_date = DateField("Dispatch date", validators=[DataRequired()])
     slip_no = StringField("Slip no", validators=[DataRequired()])
-    route = StringField("Route", validators=[DataRequired()])
+    route = StringField("Route")
+    area = StringField("Area", validators=[DataRequired()])
+    odo_start = IntegerField("Odo start (Km)")
+    odo_end = IntegerField("Odo end (Km)")
     cbm = FloatField("Cbm", validators=[DataRequired()])
     qty = IntegerField("Qty", validators=[DataRequired()])
     drops = IntegerField("Drops", validators=[DataRequired()])
@@ -35,8 +38,8 @@ class DispatchForm(FlaskForm):
 
 class TableFilterForm(FlaskForm):
     filter = SelectField("Filter by:", choices=[
-        ("dispatch_date", "Dispatch date"),
-        ("encoded_on", "Encoded date")])
+        ("dispatch_date", "Date dispatched"),
+        ("encoded_on", "Date encoded")])
     date_start = DateField("From")
     date_end = DateField("To")
     submit = SubmitField("Apply filter")

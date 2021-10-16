@@ -24,6 +24,9 @@
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('dispatch') }}">Dispatch</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('input_dispatch') }}">Input_Dispatch</a>
+          </li>
         {% if current_user.is_authenticated %}
 
           <li class="nav-item">
@@ -33,9 +36,8 @@
             <a class="nav-link" href="#">Admin</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="{{ url_for('logout') }}">logout</a>
+            <a class="nav-link" href="{{ url_for('logout') }}">logout</a>
           </li>
-
         {% else %}
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('register') }}">Register</a>

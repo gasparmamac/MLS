@@ -1,11 +1,11 @@
 from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
-from flask_login import UserMixin, login_user, LoginManager,fresh_login_required, login_required, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 from forms import LoginForm, RegisterForm, DispatchForm, TableFilterForm
-from datetime import date
+from datetime import datetime, date
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 import os
@@ -43,6 +43,10 @@ class Dispatch(UserMixin, db.Model):
     dispatch_date = db.Column(db.String(100), nullable=False)
     slip_no = db.Column(db.String(100), nullable=False)
     route = db.Column(db.String(100), nullable=False)
+    area = db.Column(db.String(250))
+    odo_start = db.Column(db.Integer)
+    odo_end = db.Column(db.Integer)
+    km = db.Column(db.Float(precision=2))
     cbm = db.Column(db.String(100), nullable=False)
     qty = db.Column(db.String(100), nullable=False)
     drops = db.Column(db.String(100), nullable=False)
@@ -58,12 +62,12 @@ class Dispatch(UserMixin, db.Model):
 
 
 # Run only once
-# db.create_all()
+db.create_all()
 
 # User login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.session_protection = "strong"
+login_manager.session_protection = "Strong"  # "basic"
 
 
 @login_manager.user_loader
@@ -157,21 +161,26 @@ def input_dispatch():
         new_dispatch = Dispatch(
             dispatch_date=form.dispatch_date.data,
             slip_no=form.slip_no.data,
-            route=form.route.data,
+            route="None".title(),
+            area=form.area.data.title(),
+            odo_start=form.odo_start.data,
+            odo_end=form.odo_end.data,
+            km=form.odo_end.data - form.odo_start.data,
             cbm=form.cbm.data,
-            qty=form.cbm.data,
+            qty=form.qty.data,
             drops=form.drops.data,
             rate=form.rate.data,
-            plate_no=form.plate_no.data,
-            driver=form.driver.data,
-            courier=form.courier.data,
+            plate_no=form.plate_no.data.upper(),
+            driver=form.driver.data.title(),
+            courier=form.courier.data.title(),
             encoded_on=date.today(),
             encoded_by=current_user.first_name,
-            encoder=current_user
+            encoder_id=current_user.id,
+            invoice_no="None"
         )
         db.session.add(new_dispatch)
         db.session.commit()
-        return redirect(url_for("dispatch_report"))
+        return redirect(url_for("dispatch"))
     return render_template("input_dispatch.html", form=form)
 
 
@@ -184,54 +193,77 @@ def dispatch():
 
     # Get all dispatch data from database
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
-        raw_df = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx,
-            index_col=None,
-            parse_dates=["dispatch_date", "encoded_on"],
-            columns=["id", "invoice_no", "dispatch_date", "slip_no", "plate_no", "cbm", "qty", "drops", "route", "driver", "courier",
-                     "encoded_by", "encoded_on"],
-        )
+        raw_df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
-        # Show latest 20 dispatch
-        clean_df = raw_df.head(n=3).sort_values("dispatch_date", ascending=False)
-        table_disp = clean_df.to_html(
-            index=False,
-            classes='table table-striped table-hover table-sm',
-            header="false",
-            justify="left")
+    # Show latest 20 dispatch data
+    sorted_df = raw_df.head(n=20).sort_values("dispatch_date", ascending=False)
 
-        # Table for OpEx
-        table_opex = clean_df.groupby(["plate_no", "driver", "courier"]).count().to_html(
-            index=False,
-            classes='table table-striped table-hover table-sm',
-            header="true",
-            justify="left")
-
+    # Dispatch expenses operation summary
+    summary_df = sorted_df.groupby(["driver"]).count()
+    print(summary_df)
+    summary_df = sorted_df.groupby(["courier"]).count()
+    print(summary_df)
+    summary_df = sorted_df.groupby(["plate_no"]).count()
+    print(summary_df)
     if form.validate_on_submit():
         # Sort and filter dataframe
         start = form.date_start.data
         end = form.date_end.data
         index = form.filter.data
+        filtered_df = raw_df[(raw_df[index] >= str(start)) & (raw_df[index] <= str(end))].sort_values(index, ascending=False)
 
-        # Table for dispatch
-        filtered_df = clean_df[(clean_df[index] >= str(start)) & (clean_df[index] <= str(end))]
-        table_disp = filtered_df.sort_values(index, ascending=False).to_html(
-            index=False,
-            classes='table table-striped table-hover table-sm',
-            header="true",
-            justify="left")
+        return render_template("dispatch_report.html", form=form, df=filtered_df)
+    return render_template("dispatch_report.html", form=form, df=sorted_df)
 
-        # Table for OpEx
-        table_opex = filtered_df.groupby(["plate_no", "driver", "courier"]).count().to_html(
-            index=False,
-            classes='table table-striped table-hover table-sm',
-            header="true",
-            justify="left")
 
-        return render_template("dispatch_report.html", form=form, table_disp=table_disp, table_opex=table_opex)
+@app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
+def edit_dispatch(dispatch_id):
+    dispatch_to_edit = Dispatch.query.get(dispatch_id)
+    # pre-load form
+    edit_form = DispatchForm(
+        # dispatch_date=dispatch_to_edit.dispatch_date,
+        dispatch_date=datetime.strptime(dispatch_to_edit.dispatch_date, "%Y-%m-%d"),
+        slip_no=dispatch_to_edit.slip_no,
+        route=dispatch_to_edit.route,
+        area=dispatch_to_edit.area,
+        odo_start=dispatch_to_edit.odo_start,
+        odo_end=dispatch_to_edit.odo_end,
+        cbm=dispatch_to_edit.cbm,
+        qty=dispatch_to_edit.qty,
+        drops=dispatch_to_edit.drops,
+        rate=dispatch_to_edit.rate,
+        plate_no=dispatch_to_edit.plate_no,
+        driver=dispatch_to_edit.driver,
+        courier=dispatch_to_edit.courier,
+    )
+    # load back edited form data to db
+    if edit_form.validate_on_submit():
+        dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data
+        dispatch_to_edit.slip_no = edit_form.slip_no.data
+        dispatch_to_edit.route = edit_form.route.data
+        dispatch_to_edit.area = edit_form.area.data
+        dispatch_to_edit.odo_start = edit_form.odo_start.data
+        dispatch_to_edit.odo_end = edit_form.odo_end.data
+        dispatch_to_edit.cbm = edit_form.cbm.data
+        dispatch_to_edit.qty = edit_form.qty.data
+        dispatch_to_edit.drops = edit_form.drops.data
+        dispatch_to_edit.rate = edit_form.rate.data
+        dispatch_to_edit.plate_no = edit_form.plate_no.data
+        dispatch_to_edit.driver = edit_form.driver.data
+        dispatch_to_edit.courier = edit_form.courier.data
+        dispatch_to_edit.encoded_on = str(date.today())
+        dispatch_to_edit.encoded_by = current_user.first_name
+        db.session.commit()
+        return redirect(url_for("dispatch"))
+    return render_template("input_dispatch.html", form=edit_form)
 
-    return render_template("dispatch_report.html", form=form, table_disp=table_disp, table_opex=table_opex)
+
+@app.route("/delete_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
+def delete_dispatch(dispatch_id):
+    dispatch_to_delete = Dispatch.query.get(dispatch_id)
+    db.session.delete(dispatch_to_delete)
+    db.session.commit()
+    return redirect(url_for("dispatch"))
 
 
 if __name__ == "__main__":
