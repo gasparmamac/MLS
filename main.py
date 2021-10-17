@@ -195,16 +195,31 @@ def dispatch():
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         raw_df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
-    # Show latest 20 dispatch data
+    # INITIAL DISPLAY DISPATCH DATA
     sorted_df = raw_df.head(n=20).sort_values("dispatch_date", ascending=False)
 
+    # OPEX SUMMARY
     # Dispatch expenses operation summary
-    summary_df = sorted_df.groupby(["driver"]).count()
-    print(summary_df)
-    summary_df = sorted_df.groupby(["courier"]).count()
-    print(summary_df)
-    summary_df = sorted_df.groupby(["plate_no"]).count()
-    print(summary_df)
+    driver_ser = sorted_df.groupby("driver")["slip_no"].count()
+    courier_ser = sorted_df.groupby("courier")["slip_no"].count()
+    unit_ser = sorted_df.groupby("plate_no")["slip_no"].count()
+
+    combined_ser = driver_ser.append(courier_ser).append(unit_ser)
+    summary_df = pd.DataFrame({'Dispatched': combined_ser})
+
+    # Adding rate and total columns to summary dataframe
+    rate = [400, 450, 350, 400, 300, 500]
+    summary_df['Rate'] = rate
+    summary_df['Total'] = summary_df['Dispatched'] * summary_df['Rate']
+    opex_tb = summary_df.to_html(
+        classes='table-striped table-hover table-bordered table-sm',
+        justify='match-parent',
+    )
+
+    # TODO: OPERATION DETAILS
+    print(sorted_df.groupby(['plate_no', 'driver'])['slip_no', 'courier', 'area'].count())
+
+    # SORTED DISPATCH DATA
     if form.validate_on_submit():
         # Sort and filter dataframe
         start = form.date_start.data
@@ -212,8 +227,26 @@ def dispatch():
         index = form.filter.data
         filtered_df = raw_df[(raw_df[index] >= str(start)) & (raw_df[index] <= str(end))].sort_values(index, ascending=False)
 
-        return render_template("dispatch_report.html", form=form, df=filtered_df)
-    return render_template("dispatch_report.html", form=form, df=sorted_df)
+        # OPEX SUMMARY
+        # Dispatch expenses operation summary
+        driver_ser = filtered_df.groupby("driver")["slip_no"].count()
+        courier_ser = filtered_df.groupby("courier")["slip_no"].count()
+        unit_ser = filtered_df.groupby("plate_no")["slip_no"].count()
+
+        combined_ser = driver_ser.append(courier_ser).append(unit_ser)
+        summary_df = pd.DataFrame({'Dispatched': combined_ser})
+
+        # Adding rate and total columns to summary dataframe
+        rate = [400, 450, 350, 400, 300, 500]
+        summary_df['Rate'] = rate
+        summary_df['Total'] = summary_df['Dispatched'] * summary_df['Rate']
+        opex_tb = summary_df.to_html(
+            classes='table-striped table-hover table-bordered table-sm',
+            justify='match-parent',
+        )
+
+        return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=opex_tb)
+    return render_template("dispatch_report.html", form=form, df=sorted_df, opex_tb=opex_tb)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
