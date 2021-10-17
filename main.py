@@ -221,7 +221,6 @@ def edit_dispatch(dispatch_id):
     dispatch_to_edit = Dispatch.query.get(dispatch_id)
     # pre-load form
     edit_form = DispatchForm(
-        # dispatch_date=dispatch_to_edit.dispatch_date,
         dispatch_date=datetime.strptime(dispatch_to_edit.dispatch_date, "%Y-%m-%d"),
         slip_no=dispatch_to_edit.slip_no,
         route=dispatch_to_edit.route,
@@ -240,17 +239,18 @@ def edit_dispatch(dispatch_id):
     if edit_form.validate_on_submit():
         dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data
         dispatch_to_edit.slip_no = edit_form.slip_no.data
-        dispatch_to_edit.route = edit_form.route.data
-        dispatch_to_edit.area = edit_form.area.data
+        dispatch_to_edit.route = edit_form.route.data.title()
+        dispatch_to_edit.area = edit_form.area.data.title()
         dispatch_to_edit.odo_start = edit_form.odo_start.data
         dispatch_to_edit.odo_end = edit_form.odo_end.data
+        dispatch_to_edit.km = edit_form.odo_end.data - edit_form.odo_start.data
         dispatch_to_edit.cbm = edit_form.cbm.data
         dispatch_to_edit.qty = edit_form.qty.data
         dispatch_to_edit.drops = edit_form.drops.data
         dispatch_to_edit.rate = edit_form.rate.data
-        dispatch_to_edit.plate_no = edit_form.plate_no.data
-        dispatch_to_edit.driver = edit_form.driver.data
-        dispatch_to_edit.courier = edit_form.courier.data
+        dispatch_to_edit.plate_no = edit_form.plate_no.data.upper()
+        dispatch_to_edit.driver = edit_form.driver.data.title()
+        dispatch_to_edit.courier = edit_form.courier.data.title()
         dispatch_to_edit.encoded_on = str(date.today())
         dispatch_to_edit.encoded_by = current_user.first_name
         db.session.commit()
