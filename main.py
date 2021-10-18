@@ -59,6 +59,8 @@ class Dispatch(UserMixin, db.Model):
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("User", back_populates="dispatch")
     invoice_no = db.Column(db.String(100))
+    status = db.Column(db.String(100))
+    or_no = db.Column(db.String(100))
 
 
 # Run only once
@@ -176,12 +178,40 @@ def input_dispatch():
             encoded_on=date.today(),
             encoded_by=current_user.first_name,
             encoder_id=current_user.id,
-            invoice_no="None"
+            invoice_no='-',
+            status='-',
+            or_no='-'
         )
         db.session.add(new_dispatch)
         db.session.commit()
         return redirect(url_for("dispatch"))
     return render_template("input_dispatch.html", form=form)
+
+
+# Salary and diesel rate matching
+def rate_matcher(ser):
+    rate = []
+    total = []
+    for index, value in ser.iteritems():
+        if index == 'Abe':
+            total.append(400 * value)
+            rate.append(400)
+        elif index == 'Rommel':
+            total.append(400 * value)
+            rate.append(400)
+        elif index == 'Nimrod':
+            total.append(450 * value)
+            rate.append(450)
+        elif index == 'Archael':
+            total.append(350 * value)
+            rate.append(350)
+        elif index == 'LWD-262':
+            total.append(300 * value)
+            rate.append(300)
+        elif index == 'YKV-852':
+            total.append(500 * value)
+            rate.append(500)
+    return rate, total
 
 
 @app.route("/dispatch_report", methods=["Get", "Post"])
@@ -205,19 +235,20 @@ def dispatch():
     unit_ser = sorted_df.groupby("plate_no")["slip_no"].count()
 
     combined_ser = driver_ser.append(courier_ser).append(unit_ser)
+
     summary_df = pd.DataFrame({'Dispatched': combined_ser})
 
     # Adding rate and total columns to summary dataframe
-    rate = [400, 450, 350, 400, 300, 500]
-    summary_df['Rate'] = rate
-    summary_df['Total'] = summary_df['Dispatched'] * summary_df['Rate']
+    matched_list = rate_matcher(combined_ser)
+    summary_df['Rate'] = matched_list[0]
+    summary_df['Total'] = matched_list[1]
     opex_tb = summary_df.to_html(
         classes='table-striped table-hover table-bordered table-sm',
         justify='match-parent',
     )
 
     # TODO: OPERATION DETAILS
-    print(sorted_df.groupby(['plate_no', 'driver'])['slip_no', 'courier', 'area'].count())
+    print(sorted_df.groupby(['plate_no'])['driver', 'courier', 'km'].count())
 
     # SORTED DISPATCH DATA
     if form.validate_on_submit():
@@ -237,9 +268,9 @@ def dispatch():
         summary_df = pd.DataFrame({'Dispatched': combined_ser})
 
         # Adding rate and total columns to summary dataframe
-        rate = [400, 450, 350, 400, 300, 500]
-        summary_df['Rate'] = rate
-        summary_df['Total'] = summary_df['Dispatched'] * summary_df['Rate']
+        matched_list = rate_matcher(combined_ser)
+        summary_df['Rate'] = matched_list[0]
+        summary_df['Total'] = matched_list[1]
         opex_tb = summary_df.to_html(
             classes='table-striped table-hover table-bordered table-sm',
             justify='match-parent',
