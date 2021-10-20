@@ -189,39 +189,36 @@ def input_dispatch():
 
 
 # Salary and diesel rate matching
-def rate_matcher(ser):
+def rate_matcher(df):
     rate = []
     total = []
-    for index, value in ser.iteritems():
-        if index == 'Abe':
-            total.append(400 * value)
+    for row in df.itertuples():
+        if row[0] == 'Abe':
+            total.append(row[1]*400)
             rate.append(400)
-        elif index == 'Rommel':
-            total.append(400 * value)
+        elif row[0] == 'Rommel':
+            total.append(row[1]*400)
             rate.append(400)
-        elif index == 'Nimrod':
-            total.append(450 * value)
+        elif row[0] == 'Nimrod':
+            total.append(row[1]*450)
             rate.append(450)
-        elif index == 'Archael':
-            total.append(350 * value)
+        elif row[0] == 'Archael':
+            total.append(row[1]*350)
             rate.append(350)
-        elif index == 'LWD-262':
-            total.append(300 * value)
-            rate.append(300)
-        elif index == 'YKV-852':
-            total.append(500 * value)
-            rate.append(500)
     return rate, total
 
 
 def diesel_matcher(df):
     diesel_rate = []
+    total = []
     for row in df.itertuples():
         if row[0] == 'LWD-262':
             diesel_rate.append(300)
+            total.append(row[1]*300)
         elif row[0] == 'YKV-852':
             diesel_rate.append(500)
-    return diesel_rate
+            total.append(row[1]*500)
+    return diesel_rate, total
 
 
 @app.route("/dispatch_report", methods=["Get", "Post"])
@@ -246,31 +243,23 @@ def dispatch():
         justify='match-parent',
     )
 
-    # OPEX SUMMARY
-    # Dispatch expenses operation summary
+    # Operators details
     driver_ser = sorted_df.groupby("driver")["slip_no"].count()
     courier_ser = sorted_df.groupby("courier")["slip_no"].count()
-    unit_ser = sorted_df.groupby("plate_no")["slip_no"].count()
-
-    combined_ser = driver_ser.append(courier_ser).append(unit_ser)
-
-    summary_df = pd.DataFrame({'Dispatched': combined_ser})
-    operator_df = pd.DataFrame(driver_ser.append(courier_ser))
-    print(operator_df)
-    # Adding rate and total columns to summary dataframe
-    matched_list = rate_matcher(combined_ser)
-    summary_df['Rate'] = matched_list[0]
-    summary_df['Total'] = matched_list[1]
-    opex_tb = operator_df.to_html(
+    operators_df = pd.DataFrame(driver_ser.append(courier_ser))
+    rate = rate_matcher(operators_df)
+    operators_df['Rate'] = rate[0]
+    operators_df['Total'] = rate[1]
+    operators_tb = operators_df.to_html(
         classes='table-striped table-hover table-bordered table-sm',
         justify='match-parent',
     )
 
     # Unit details
-    unit_df = sorted_df.groupby(['plate_no']).aggregate({ 'slip_no': 'count', 'km': 'sum'})
+    unit_df = sorted_df.groupby(['plate_no']).aggregate({'slip_no': 'count', 'km': 'sum'})
     diesel = diesel_matcher(unit_df)
-    unit_df['diesel/disp'] = diesel
-    unit_df['total diesel'] = unit_df['diesel/disp'] * unit_df['slip_no']
+    unit_df['diesel/disp'] = diesel[0]
+    unit_df['total diesel'] = diesel[1]
     unit_tb = unit_df.to_html(
         classes='table-striped table-hover table-bordered table-sm',
         justify='match-parent',
@@ -297,13 +286,13 @@ def dispatch():
         matched_list = rate_matcher(combined_ser)
         summary_df['Rate'] = matched_list[0]
         summary_df['Total'] = matched_list[1]
-        opex_tb = summary_df.to_html(
+        operators_tb = summary_df.to_html(
             classes='table-striped table-hover table-bordered table-sm',
             justify='match-parent',
         )
 
-        return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=opex_tb)
-    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, unit_tb=unit_tb,opex_tb=opex_tb)
+        return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=operators_tb)
+    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, operators_tb=operators_tb, unit_tb=unit_tb)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
