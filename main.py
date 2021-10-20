@@ -223,11 +223,17 @@ def dispatch():
 
     # Get all dispatch data from database
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
-        raw_df = pd.read_sql_table(table_name="dispatch", con=cnx)
+        df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
-    # INITIAL DISPLAY DISPATCH DATA
-    sorted_df = raw_df.head(n=20).sort_values("dispatch_date", ascending=False)
+    # Dispatch data
+    sorted_df = df.head(n=20).sort_values("dispatch_date", ascending=False)
 
+    # Operation summary
+    operation_df = pd.DataFrame(sorted_df.groupby(['plate_no', 'dispatch_date', 'driver', 'courier'])['slip_no'].count())
+    operation_tb = operation_df.to_html(
+        classes='table-striped table-hover table-bordered table-sm',
+        justify='match-parent',
+    )
     # OPEX SUMMARY
     # Dispatch expenses operation summary
     driver_ser = sorted_df.groupby("driver")["slip_no"].count()
@@ -256,7 +262,7 @@ def dispatch():
         start = form.date_start.data
         end = form.date_end.data
         index = form.filter.data
-        filtered_df = raw_df[(raw_df[index] >= str(start)) & (raw_df[index] <= str(end))].sort_values(index, ascending=False)
+        filtered_df = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False)
 
         # OPEX SUMMARY
         # Dispatch expenses operation summary
@@ -277,7 +283,7 @@ def dispatch():
         )
 
         return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=opex_tb)
-    return render_template("dispatch_report.html", form=form, df=sorted_df, opex_tb=opex_tb)
+    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, opex_tb=opex_tb)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
