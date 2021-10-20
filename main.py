@@ -214,6 +214,16 @@ def rate_matcher(ser):
     return rate, total
 
 
+def diesel_matcher(df):
+    diesel_rate = []
+    for row in df.itertuples():
+        if row[0] == 'LWD-262':
+            diesel_rate.append(300)
+        elif row[0] == 'YKV-852':
+            diesel_rate.append(500)
+    return diesel_rate
+
+
 @app.route("/dispatch_report", methods=["Get", "Post"])
 # @fresh_login_required
 # @admin_only
@@ -229,11 +239,13 @@ def dispatch():
     sorted_df = df.head(n=20).sort_values("dispatch_date", ascending=False)
 
     # Operation summary
-    operation_df = pd.DataFrame(sorted_df.groupby(['plate_no', 'dispatch_date', 'driver', 'courier'])['slip_no'].count())
+    operation_df = pd.DataFrame(
+        sorted_df.groupby(['plate_no', 'dispatch_date', 'driver', 'courier'])['slip_no'].count())
     operation_tb = operation_df.to_html(
         classes='table-striped table-hover table-bordered table-sm',
         justify='match-parent',
     )
+
     # OPEX SUMMARY
     # Dispatch expenses operation summary
     driver_ser = sorted_df.groupby("driver")["slip_no"].count()
@@ -243,18 +255,26 @@ def dispatch():
     combined_ser = driver_ser.append(courier_ser).append(unit_ser)
 
     summary_df = pd.DataFrame({'Dispatched': combined_ser})
-
+    operator_df = pd.DataFrame(driver_ser.append(courier_ser))
+    print(operator_df)
     # Adding rate and total columns to summary dataframe
     matched_list = rate_matcher(combined_ser)
     summary_df['Rate'] = matched_list[0]
     summary_df['Total'] = matched_list[1]
-    opex_tb = summary_df.to_html(
+    opex_tb = operator_df.to_html(
         classes='table-striped table-hover table-bordered table-sm',
         justify='match-parent',
     )
 
-    # TODO: OPERATION DETAILS
-    print(sorted_df.groupby(['plate_no'])['driver', 'courier', 'km'].count())
+    # Unit details
+    unit_df = sorted_df.groupby(['plate_no']).aggregate({ 'slip_no': 'count', 'km': 'sum'})
+    diesel = diesel_matcher(unit_df)
+    unit_df['diesel/disp'] = diesel
+    unit_df['total diesel'] = unit_df['diesel/disp'] * unit_df['slip_no']
+    unit_tb = unit_df.to_html(
+        classes='table-striped table-hover table-bordered table-sm',
+        justify='match-parent',
+    )
 
     # SORTED DISPATCH DATA
     if form.validate_on_submit():
@@ -283,7 +303,7 @@ def dispatch():
         )
 
         return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=opex_tb)
-    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, opex_tb=opex_tb)
+    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, unit_tb=unit_tb,opex_tb=opex_tb)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
