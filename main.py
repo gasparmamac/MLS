@@ -188,23 +188,27 @@ def input_dispatch():
     return render_template("input_dispatch.html", form=form)
 
 
+rate_dict = {'Nimrod': 450, 'Abe': 400, 'Archael': 350, 'Rommel': 400}
+diesel_dict = {'LWD-262': 300, 'YKV-852': 500}
+
+
 # Salary and diesel rate matching
 def rate_matcher(df):
     rate = []
     total = []
     for row in df.itertuples():
         if row[0] == 'Abe':
-            total.append(row[1]*400)
-            rate.append(400)
+            total.append(row[1]*rate_dict['Abe'])
+            rate.append(rate_dict['Abe'])
         elif row[0] == 'Rommel':
-            total.append(row[1]*400)
-            rate.append(400)
+            total.append(row[1]*rate_dict['Rommel'])
+            rate.append(rate_dict['Rommel'])
         elif row[0] == 'Nimrod':
-            total.append(row[1]*450)
-            rate.append(450)
+            total.append(row[1]*rate_dict['Nimrod'])
+            rate.append(rate_dict['Nimrod'])
         elif row[0] == 'Archael':
-            total.append(row[1]*350)
-            rate.append(350)
+            total.append(row[1]*rate_dict['Archael'])
+            rate.append(rate_dict['Archael'])
     return rate, total
 
 
@@ -213,11 +217,11 @@ def diesel_matcher(df):
     total = []
     for row in df.itertuples():
         if row[0] == 'LWD-262':
-            diesel_rate.append(300)
-            total.append(row[1]*300)
+            diesel_rate.append(diesel_dict['LWD-262'])
+            total.append(row[1]*diesel_dict['LWD-262'])
         elif row[0] == 'YKV-852':
-            diesel_rate.append(500)
-            total.append(row[1]*500)
+            diesel_rate.append(diesel_dict['YKV-852'])
+            total.append(row[1]*diesel_dict['YKV-852'])
     return diesel_rate, total
 
 
