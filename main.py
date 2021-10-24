@@ -58,9 +58,10 @@ class Dispatch(UserMixin, db.Model):
     encoded_by = db.Column(db.String(100))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("User", back_populates="dispatch")
+    pay_day = db.Column(db.String(100), nullable=False)
     invoice_no = db.Column(db.String(100))
-    status = db.Column(db.String(100))
     or_no = db.Column(db.String(100))
+    or_amt = db.Column(db.Float(precision=2))
 
 
 # Run only once
