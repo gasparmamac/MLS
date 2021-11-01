@@ -52,7 +52,7 @@ class DispatchForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
-class TableFilterForm(FlaskForm):
+class DispatchTableFilterForm(FlaskForm):
     filter = SelectField("Filter by:", choices=[
         ("dispatch_date", "Date dispatched"),
         ("encoded_on", "Date encoded")])

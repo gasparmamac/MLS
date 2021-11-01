@@ -4,7 +4,7 @@ from flask_login import UserMixin, login_user, LoginManager, fresh_login_require
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm, DispatchForm, TableFilterForm
+from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm
 from util_func import rate_matcher, diesel_matcher
 from datetime import datetime, date
 from sqlalchemy.orm import relationship
@@ -163,7 +163,7 @@ def logout():
 # @admin_only
 def dispatch():
     # create table filter form
-    form = TableFilterForm()
+    form = DispatchTableFilterForm()
 
     # Get all dispatch data from database
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
@@ -183,7 +183,7 @@ def dispatch():
     return render_template("dispatch_data.html", form=form, df=sorted_df)
 
 
-@app.route("/dispatch", methods=["Get", "Post"])
+@app.route("/input_dispatch", methods=["Get", "Post"])
 # @fresh_login_required
 # @admin_only
 @login_required
@@ -272,6 +272,12 @@ def delete_dispatch(dispatch_id):
     db.session.delete(dispatch_to_delete)
     db.session.commit()
     return redirect(url_for("dispatch"))
+
+
+# ------------------------------------------------Maintenance expenses table------------------------------------------
+@app.route("/maintenance", methods=["Get", "Post"])
+def maintenance():
+    return render_template("maintenance_data.html")
 
 
 if __name__ == "__main__":
