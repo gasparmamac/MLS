@@ -22,19 +22,17 @@
         </li>
 
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('dispatch') }}">Dispatch</a>
+            <a class="nav-link" href="{{ url_for('dispatch') }}">Encode Dispatch</a>
+          </li>
+         <li class="nav-item">
+            <a class="nav-link" href="#"> Encode Maintenance Expenses</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('input_dispatch') }}">Input_Dispatch</a>
+            <a class="nav-link" href="#">Encode Admin Expense</a>
           </li>
+
         {% if current_user.is_authenticated %}
 
-          <li class="nav-item">
-            <a class="nav-link" href="#">Maintenance</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Admin</a>
-          </li>
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('logout') }}">logout</a>
           </li>

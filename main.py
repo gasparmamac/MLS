@@ -14,7 +14,7 @@ import os
 import pandas as pd
 
 # pandas options
-pd.options.display.float_format = '{:,.2f}'.format
+pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(12)
@@ -42,6 +42,7 @@ class Dispatch(UserMixin, db.Model):
     __tablename__ = "dispatch"
     id = db.Column(db.Integer, primary_key=True)
     dispatch_date = db.Column(db.String(100), nullable=False)
+    wd_code = db.Column(db.String(100), nullable=False)
     slip_no = db.Column(db.String(100), nullable=False)
     route = db.Column(db.String(100), nullable=False)
     area = db.Column(db.String(250))
@@ -68,10 +69,12 @@ class Dispatch(UserMixin, db.Model):
 # Run only once
 db.create_all()
 
+
+# ------------------------------------------Login-logout setup and config---------------------------------------------
 # User login manager
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.session_protection = "Strong"  # "basic"
+login_manager.session_protection = "Basic"  # "Strong"
 
 
 @login_manager.user_loader
@@ -88,7 +91,7 @@ def admin_only(f):
     return decorated_function
 
 
-# My apps ----------------------------------------------
+# --------------------------------------------------Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
     return render_template("index.html")
@@ -149,47 +152,12 @@ def login():
 
 
 @app.route("/logout", methods=["Get", "Post"])
-@login_required
 def logout():
     logout_user()
     return redirect(url_for("home"))
 
 
-@app.route("/dispatch", methods=["Get", "Post"])
-# @fresh_login_required
-# @admin_only
-def input_dispatch():
-    form = DispatchForm()
-    if form.validate_on_submit():
-        # Add new dispatch to database
-        new_dispatch = Dispatch(
-            dispatch_date=form.dispatch_date.data,
-            slip_no=form.slip_no.data,
-            route="None".title(),
-            area=form.area.data.title(),
-            odo_start=form.odo_start.data,
-            odo_end=form.odo_end.data,
-            km=form.odo_end.data - form.odo_start.data,
-            cbm=form.cbm.data,
-            qty=form.qty.data,
-            drops=form.drops.data,
-            rate=form.rate.data,
-            plate_no=form.plate_no.data.upper(),
-            driver=form.driver.data.title(),
-            courier=form.courier.data.title(),
-            encoded_on=date.today(),
-            encoded_by=current_user.first_name,
-            encoder_id=current_user.id,
-            invoice_no='-',
-            status='-',
-            or_no='-'
-        )
-        db.session.add(new_dispatch)
-        db.session.commit()
-        return redirect(url_for("dispatch"))
-    return render_template("input_dispatch.html", form=form)
-
-
+# -------------------------------------------------Dispatch table---------------------------------------------------
 @app.route("/dispatch_report", methods=["Get", "Post"])
 # @fresh_login_required
 # @admin_only
@@ -204,36 +172,6 @@ def dispatch():
     # Dispatch data
     sorted_df = df.head(n=20).sort_values("dispatch_date", ascending=False)
 
-    # Operation summary
-    operation_df = pd.DataFrame(
-        sorted_df.groupby(['plate_no', 'dispatch_date', 'driver', 'courier'])['slip_no'].count())
-    operation_tb = operation_df.to_html(
-        classes='table-striped table-hover table-bordered table-sm',
-        justify='match-parent',
-    )
-
-    # Operators details
-    driver_ser = sorted_df.groupby("driver")["slip_no"].count()
-    courier_ser = sorted_df.groupby("courier")["slip_no"].count()
-    operators_df = pd.DataFrame(driver_ser.append(courier_ser))
-    rate = rate_matcher(operators_df)
-    operators_df['Rate'] = rate[0]
-    operators_df['Total'] = rate[1]
-    operators_tb = operators_df.to_html(
-        classes='table-striped table-hover table-bordered table-sm',
-        justify='match-parent',
-    )
-
-    # Unit details
-    unit_df = sorted_df.groupby(['plate_no']).aggregate({'slip_no': 'count', 'km': 'sum'})
-    diesel = diesel_matcher(unit_df)
-    unit_df['diesel/disp'] = diesel[0]
-    unit_df['total diesel'] = diesel[1]
-    unit_tb = unit_df.to_html(
-        classes='table-striped table-hover table-bordered table-sm',
-        justify='match-parent',
-    )
-
     # SORTED DISPATCH DATA
     if form.validate_on_submit():
         # Sort and filter dataframe
@@ -241,35 +179,56 @@ def dispatch():
         end = form.date_end.data
         index = form.filter.data
         filtered_df = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False)
+        return render_template("dispatch_data.html", form=form, df=filtered_df)
+    return render_template("dispatch_data.html", form=form, df=sorted_df)
 
-        # OPEX SUMMARY
-        # Dispatch expenses operation summary
-        driver_ser = filtered_df.groupby("driver")["slip_no"].count()
-        courier_ser = filtered_df.groupby("courier")["slip_no"].count()
-        unit_ser = filtered_df.groupby("plate_no")["slip_no"].count()
 
-        combined_ser = driver_ser.append(courier_ser).append(unit_ser)
-        summary_df = pd.DataFrame({'Dispatched': combined_ser})
-
-        # Adding rate and total columns to summary dataframe
-        matched_list = rate_matcher(combined_ser)
-        summary_df['Rate'] = matched_list[0]
-        summary_df['Total'] = matched_list[1]
-        operators_tb = summary_df.to_html(
-            classes='table-striped table-hover table-bordered table-sm',
-            justify='match-parent',
+@app.route("/dispatch", methods=["Get", "Post"])
+# @fresh_login_required
+# @admin_only
+@login_required
+def input_dispatch():
+    form = DispatchForm()
+    if form.validate_on_submit():
+        # Add new dispatch to database
+        new_dispatch = Dispatch(
+            dispatch_date=form.dispatch_date.data.strftime("%Y-%m-%d-%a"),
+            wd_code=form.wd_code.data,
+            slip_no=form.slip_no.data,
+            route=form.route.data.title(),
+            area=form.area.data.title(),
+            odo_start=form.odo_start.data,
+            odo_end=form.odo_end.data,
+            km=form.odo_end.data - form.odo_start.data,
+            cbm=form.cbm.data,
+            qty=form.qty.data,
+            drops=form.drops.data,
+            rate=form.rate.data,
+            plate_no=form.plate_no.data.upper(),
+            driver=form.driver.data.title(),
+            courier=form.courier.data.title(),
+            encoded_on=date.today().strftime("%Y-%m-%d-%a"),
+            encoded_by=current_user.first_name,
+            encoder_id=current_user.id,
+            pay_day='-',
+            invoice_no='-',
+            or_no='-',
+            or_amt=0
         )
-
-        return render_template("dispatch_report.html", form=form, df=filtered_df, opex_tb=operators_tb)
-    return render_template("dispatch_report.html", form=form, df=sorted_df, operation_tb=operation_tb, operators_tb=operators_tb, unit_tb=unit_tb)
+        db.session.add(new_dispatch)
+        db.session.commit()
+        return redirect(url_for("dispatch"))
+    return render_template("input_dispatch.html", form=form)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
+@login_required
 def edit_dispatch(dispatch_id):
     dispatch_to_edit = Dispatch.query.get(dispatch_id)
     # pre-load form
     edit_form = DispatchForm(
-        dispatch_date=datetime.strptime(dispatch_to_edit.dispatch_date, "%Y-%m-%d"),
+        dispatch_date=datetime.strptime(dispatch_to_edit.dispatch_date, "%Y-%m-%d-%a"),
+        wd_code=dispatch_to_edit.wd_code,
         slip_no=dispatch_to_edit.slip_no,
         route=dispatch_to_edit.route,
         area=dispatch_to_edit.area,
@@ -285,7 +244,8 @@ def edit_dispatch(dispatch_id):
     )
     # load back edited form data to db
     if edit_form.validate_on_submit():
-        dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data
+        dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data.strftime("%Y-%m-%d-%a")
+        dispatch_to_edit.wd_code = edit_form.wd_code.data
         dispatch_to_edit.slip_no = edit_form.slip_no.data
         dispatch_to_edit.route = edit_form.route.data.title()
         dispatch_to_edit.area = edit_form.area.data.title()
@@ -299,7 +259,7 @@ def edit_dispatch(dispatch_id):
         dispatch_to_edit.plate_no = edit_form.plate_no.data.upper()
         dispatch_to_edit.driver = edit_form.driver.data.title()
         dispatch_to_edit.courier = edit_form.courier.data.title()
-        dispatch_to_edit.encoded_on = str(date.today())
+        dispatch_to_edit.encoded_on = str(date.today().strftime("%Y-%m-%d-%a"))
         dispatch_to_edit.encoded_by = current_user.first_name
         db.session.commit()
         return redirect(url_for("dispatch"))

@@ -21,8 +21,24 @@ class RegisterForm(FlaskForm):
 
 class DispatchForm(FlaskForm):
     dispatch_date = DateField("Dispatch date", validators=[DataRequired()])
+    wd_code = SelectField("WD code", choices=[
+        ("normal", "Normal Working day"),
+        ("reg_hol", "Regular holiday"),
+        ("no_sp_hol", "Non-working special holiday"),
+        ("wk_sp_hol", "Working special holiday"),
+        ("rd", "Rest day")
+    ])
     slip_no = StringField("Slip no", validators=[DataRequired()])
-    route = StringField("Route")
+    route = SelectField("Route", choices=[
+        "Davao City",
+        "CDO via Buda",
+        "GenSan",
+        "Malita",
+        "Cotabato",
+        "Asuncion",
+        "Mati",
+        "CDO via Butuan"
+    ])
     area = StringField("Area", validators=[DataRequired()])
     odo_start = IntegerField("Odo start (Km)")
     odo_end = IntegerField("Odo end (Km)")
