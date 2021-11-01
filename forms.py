@@ -61,3 +61,28 @@ class DispatchTableFilterForm(FlaskForm):
     submit = SubmitField("Apply filter")
 
 
+class MaintenanceForm(FlaskForm):
+    date = DateField("Date", validators=[DataRequired()])
+    plate_no = StringField("Plate no", validators=[DataRequired()])
+    type = SelectField("Type", choices=[
+        "Repair",
+        "Service",
+        "Repair and service",
+        "Tool/s",
+        "Others"
+    ])
+    comment = StringField("Expenses detail", validators=[DataRequired()])
+    pyesa_amt = FloatField("Pyesa amt")
+    tools_amt = FloatField("Tools amt")
+    service_charge = FloatField("Service charge")
+    submit = SubmitField("Add record")
+
+
+class MaintenanceFilterForm(FlaskForm):
+    filter = SelectField("Filter by:", choices=[
+        ("dispatch_date", "Date dispatched"),
+        ("encoded_on", "Date encoded")])
+    date_start = DateField("From")
+    date_end = DateField("To")
+    submit = SubmitField("Apply filter")
+

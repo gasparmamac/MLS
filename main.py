@@ -4,8 +4,7 @@ from flask_login import UserMixin, login_user, LoginManager, fresh_login_require
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm
-from util_func import rate_matcher, diesel_matcher
+from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm, MaintenanceForm, MaintenanceFilterForm
 from datetime import datetime, date
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -48,7 +47,7 @@ class Dispatch(UserMixin, db.Model):
     area = db.Column(db.String(250))
     odo_start = db.Column(db.Integer)
     odo_end = db.Column(db.Integer)
-    km = db.Column(db.Float(precision=2))
+    km = db.Column(db.Float(precision=1))
     cbm = db.Column(db.String(100), nullable=False)
     qty = db.Column(db.String(100), nullable=False)
     drops = db.Column(db.String(100), nullable=False)
@@ -63,7 +62,20 @@ class Dispatch(UserMixin, db.Model):
     pay_day = db.Column(db.String(100), nullable=False)
     invoice_no = db.Column(db.String(100))
     or_no = db.Column(db.String(100))
-    or_amt = db.Column(db.Float(precision=2))
+    or_amt = db.Column(db.Float(precision=1))
+
+
+class Maintenance(UserMixin, db.Model):
+    __tablename__ = "maintenance"
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(100), nullable=False)
+    plate_no = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(100), nullable=False)
+    comment = db.Column(db.String(250), nullable=False)
+    pyesa_amt = db.Column(db.Float(precision=1))
+    tools_amt = db.Column(db.Float(precision=1))
+    service_charge = db.Column(db.Float(precision=1))
+    total_amt = db.Column(db.Float(precision=1))
 
 
 # Run only once
@@ -218,7 +230,7 @@ def input_dispatch():
         db.session.add(new_dispatch)
         db.session.commit()
         return redirect(url_for("dispatch"))
-    return render_template("input_dispatch.html", form=form)
+    return render_template("dispatch_input.html", form=form)
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
@@ -263,7 +275,7 @@ def edit_dispatch(dispatch_id):
         dispatch_to_edit.encoded_by = current_user.first_name
         db.session.commit()
         return redirect(url_for("dispatch"))
-    return render_template("input_dispatch.html", form=edit_form)
+    return render_template("dispatch_input.html", form=edit_form)
 
 
 @app.route("/delete_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
@@ -277,7 +289,70 @@ def delete_dispatch(dispatch_id):
 # ------------------------------------------------Maintenance expenses table------------------------------------------
 @app.route("/maintenance", methods=["Get", "Post"])
 def maintenance():
-    return render_template("maintenance_data.html")
+    form = MaintenanceFilterForm()
+    # Get all maintenance data from database
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="maintenance", con=cnx)
+
+    if form.validate_on_submit():
+        return render_template("maintenance_data,html", form=form, df=df)
+    return render_template("maintenance_data.html", form=form, df=df)
+
+
+@app.route("/input_maintenance", methods=["Get", "Post"])
+def input_maintenance():
+    form = MaintenanceForm()
+    if form.validate_on_submit():
+        # load form data to database
+        new_record = Maintenance(
+            date=form.date.data.strftime("%Y-%m-%d-%a"),
+            plate_no=form.plate_no.data.upper(),
+            type=form.type.data.title(),
+            comment=form.comment.data.title(),
+            pyesa_amt=form.pyesa_amt.data,
+            tools_amt=form.tools_amt.data,
+            service_charge=form.service_charge.data,
+            total_amt=form.pyesa_amt.data + form.tools_amt.data + form.service_charge.data,
+        )
+        db.session.add(new_record)
+        db.session.commit()
+        return redirect(url_for('maintenance'))
+    return render_template("maintenance_input.html", form=form)
+
+
+@app.route("/edit_maintenance/<int:maintenance_id>", methods=["Get", "Post"])
+def edit_maintenance(maintenance_id):
+    maintenance_to_edit = Maintenance.query.get(maintenance_id)
+    # pre-load form
+    edit_form = MaintenanceForm(
+        date=datetime.strptime(maintenance_to_edit.date, "%Y-%m-%d-%a"),
+        plate_no=maintenance_to_edit.plate_no,
+        type=maintenance_to_edit.type,
+        comment=maintenance_to_edit.comment,
+        pyesa_amt=maintenance_to_edit.pyesa_amt,
+        tools_amt=maintenance_to_edit.tools_amt,
+        service_charge=maintenance_to_edit.service_charge,
+    )
+    # load back edited form-data to database
+    if edit_form.validate_on_submit():
+        maintenance_to_edit.date = edit_form.date.data.strftime("%Y-%m-%d-%a")
+        maintenance_to_edit.plate_no = edit_form.plate_no.data.upper()
+        maintenance_to_edit.type = edit_form.type.data.title()
+        maintenance_to_edit.comment = edit_form.comment.data.title()
+        maintenance_to_edit.pyesa_amt = edit_form.pyesa_amt.data
+        maintenance_to_edit.tools_amt = edit_form.tools_amt.data
+        maintenance_to_edit.service_charge = edit_form.service_charge.data
+        db.session.commit()
+        return redirect(url_for('maintenance'))
+    return render_template("maintenance_input.html", form=edit_form)
+
+
+@app.route("/delete_maintenance/<int:maintenance_id>", methods=["Get", "Post"])
+def delete_maintenance(maintenance_id):
+    maintenance_to_delete = Maintenance.query.get(maintenance_id)
+    db.session.delete(maintenance_to_delete)
+    db.session.commit()
+    return redirect(url_for('maintenance'))
 
 
 if __name__ == "__main__":
