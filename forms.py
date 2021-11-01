@@ -79,9 +79,6 @@ class MaintenanceForm(FlaskForm):
 
 
 class MaintenanceFilterForm(FlaskForm):
-    filter = SelectField("Filter by:", choices=[
-        ("dispatch_date", "Date dispatched"),
-        ("encoded_on", "Date encoded")])
     date_start = DateField("From")
     date_end = DateField("To")
     submit = SubmitField("Apply filter")

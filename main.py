@@ -294,9 +294,16 @@ def maintenance():
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         df = pd.read_sql_table(table_name="maintenance", con=cnx)
 
+    sorted_df = df.head(n=10).sort_values("date", ascending=False)
     if form.validate_on_submit():
-        return render_template("maintenance_data,html", form=form, df=df)
-    return render_template("maintenance_data.html", form=form, df=df)
+        # Sort and filter dataframe
+        start = form.date_start.data
+        end = form.date_end.data
+        index = "date"
+        filtered_df = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False)
+        return render_template("maintenance_data.html", form=form, df=filtered_df)
+
+    return render_template("maintenance_data.html", form=form, df=sorted_df)
 
 
 @app.route("/input_maintenance", methods=["Get", "Post"])

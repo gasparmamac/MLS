@@ -9,7 +9,7 @@
     <div class="container my-5">
         <h2>Maintenance data</h2>
         <!--    Filter form-->
-        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline mb-1", button_map={"submit": "primary"}) }}
+        {{ wtf.quick_form(form, novalidate=True, extra_classes="form form-inline my-1", button_map={"submit": "primary"}) }}
         <div class="table-responsive">
             <table class="table table-striped table-hover table-bordered table-sm">
                 <caption><a href="{{ url_for('input_maintenance')}}">Add maintenance record</a> </caption>
