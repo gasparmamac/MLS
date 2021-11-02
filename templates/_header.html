@@ -28,7 +28,7 @@
             <a class="nav-link" href="{{ url_for('maintenance')}}"> Encode Maintenance Expenses</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#">Encode Admin Expense</a>
+            <a class="nav-link" href="{{ url_for('admin')}}">Encode Admin Expense</a>
           </li>
 
         {% if current_user.is_authenticated %}

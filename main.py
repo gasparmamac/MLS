@@ -4,7 +4,8 @@ from flask_login import UserMixin, login_user, LoginManager, fresh_login_require
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
-from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm, MaintenanceForm, MaintenanceFilterForm
+from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm, MaintenanceForm, \
+    MaintenanceFilterForm, AdminExpenseForm, AdminFilterForm
 from datetime import datetime, date
 from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
@@ -35,6 +36,7 @@ class User(UserMixin, db.Model):
     middle_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
     dispatch = relationship("Dispatch", back_populates="encoder")
+    admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
 
 
 class Dispatch(UserMixin, db.Model):
@@ -78,6 +80,20 @@ class Maintenance(UserMixin, db.Model):
     total_amt = db.Column(db.Float(precision=1))
 
 
+class AdminExpenseTable(UserMixin, db.Model):
+    __tablename__ = "admin"
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(100), nullable=False)
+    agency = db.Column(db.String(100), nullable=False)
+    office = db.Column(db.String(100), nullable=False)
+    frequency = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(250), nullable=False)
+    amount = db.Column(db.Float(precision=1))
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("User", back_populates="admin_exp")
+
+
 # Run only once
 db.create_all()
 
@@ -106,7 +122,7 @@ def admin_only(f):
 # --------------------------------------------------Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    return render_template("index.html")
+    return render_template("_index.html")
 
 
 @app.route("/register", methods=["Get", "Post"])
@@ -138,7 +154,7 @@ def register():
         db.session.commit()
         login_user(new_user)
         return redirect(url_for("home"))
-    return render_template("register.html", form=form)
+    return render_template("_register.html", form=form)
 
 
 @app.route("/login", methods=["Get", "Post"])
@@ -160,7 +176,7 @@ def login():
         else:
             login_user(user)
             return redirect(url_for("home"))
-    return render_template("login.html", form=form)
+    return render_template("_login.html", form=form)
 
 
 @app.route("/logout", methods=["Get", "Post"])
@@ -360,6 +376,78 @@ def delete_maintenance(maintenance_id):
     db.session.delete(maintenance_to_delete)
     db.session.commit()
     return redirect(url_for('maintenance'))
+
+
+# -------------------------------------------------Admin expenses----------------------------------------------------
+@app.route("/admin", methods=["Get", "Post"])
+def admin():
+    form = AdminFilterForm()
+    # Get all admin expenses data from database
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="admin", con=cnx)
+
+    sorted_df = df.head(n=10).sort_values("date", ascending=False)
+    if form.validate_on_submit():
+        # Sort and filter dataframe
+        start = form.date_start.data
+        end = form.date_end.data
+        index = "date"
+        filtered_df = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False)
+        return render_template("admin_data.html", form=form, df=filtered_df)
+    return render_template("admin_data.html", form=form, df=sorted_df)
+
+
+@app.route("/input_admin", methods=["Get", "Post"])
+def input_admin():
+    form = AdminExpenseForm()
+    if form.validate_on_submit():
+        # load form data to database
+        new_record = AdminExpenseTable(
+            date=form.date.data.strftime("%Y-%m-%d-%a"),
+            agency=form.agency.data.upper(),
+            office=form.office.data.title(),
+            frequency=form.frequency.data.title(),
+            description=form.description.data.title(),
+            amount=form.amount.data,
+            encoded_by=current_user.first_name
+        )
+        db.session.add(new_record)
+        db.session.commit()
+        return redirect(url_for('admin'))
+    return render_template("admin_input.html", form=form)
+
+
+@app.route("/edit_admin/<int:admin_id>", methods=["Get", "Post"])
+def edit_admin(admin_id):
+    admin_to_edit = AdminExpenseTable.query.get(admin_id)
+    # pre-load form
+    edit_form = AdminExpenseForm(
+        date=datetime.strptime(admin_to_edit.date, "%Y-%m-%d-%a"),
+        agency=admin_to_edit.agency,
+        office=admin_to_edit.office,
+        frequency=admin_to_edit.frequency,
+        description=admin_to_edit.description,
+        amount=admin_to_edit.amount
+    )
+    # load back edited form-data to database
+    if edit_form.validate_on_submit():
+        admin_to_edit.date = edit_form.date.data.strftime("%Y-%m-%d-%a")
+        admin_to_edit.agency = edit_form.agency.data.upper()
+        admin_to_edit.office = edit_form.office.data.title()
+        admin_to_edit.frequency = edit_form.frequency.data.title()
+        admin_to_edit.description = edit_form.description.data.title()
+        admin_to_edit.amount = edit_form.amount.data
+        db.session.commit()
+        return redirect(url_for('admin'))
+    return render_template("admin_input.html", form=edit_form)
+
+
+@app.route("/delete_admin/<int:admin_id>", methods=["Get", "Post"])
+def delete_admin(admin_id):
+    admin_to_delete = AdminExpenseTable.query.get(admin_id)
+    db.session.delete(admin_to_delete)
+    db.session.commit()
+    return redirect(url_for('admin'))
 
 
 if __name__ == "__main__":

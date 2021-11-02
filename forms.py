@@ -83,3 +83,21 @@ class MaintenanceFilterForm(FlaskForm):
     date_end = DateField("To")
     submit = SubmitField("Apply filter")
 
+
+class AdminExpenseForm(FlaskForm):
+    date = DateField("Date", validators=[DataRequired()])
+    agency = StringField("Agency (ex. BIR, City Hall etc)")
+    office = StringField("Office (ex. Treasurer's office etc)")
+    frequency = StringField("Frequency (ex. Monthly, Yearly etc)")
+    description = StringField("Description", validators=[DataRequired()])
+    amount = FloatField("Amount")
+    submit = SubmitField("Add record")
+
+
+class AdminFilterForm(FlaskForm):
+    date_start = DateField("From")
+    date_end = DateField("To")
+    submit = SubmitField("Apply filter")
+
+
+
