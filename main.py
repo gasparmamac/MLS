@@ -37,6 +37,7 @@ class User(UserMixin, db.Model):
     last_name = db.Column(db.String(100))
     dispatch = relationship("Dispatch", back_populates="encoder")
     admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
+    maintenance = relationship("Maintenance", back_populates="encoder")
 
 
 class Dispatch(UserMixin, db.Model):
@@ -57,14 +58,14 @@ class Dispatch(UserMixin, db.Model):
     plate_no = db.Column(db.String(100), nullable=False)
     driver = db.Column(db.String(100), nullable=False)
     courier = db.Column(db.String(100), nullable=False)
-    encoded_on = db.Column(db.String(100), nullable=False)
-    encoded_by = db.Column(db.String(100))
-    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    encoder = relationship("User", back_populates="dispatch")
     pay_day = db.Column(db.String(100), nullable=False)
     invoice_no = db.Column(db.String(100))
     or_no = db.Column(db.String(100))
     or_amt = db.Column(db.Float(precision=1))
+    encoded_on = db.Column(db.String(100), nullable=False)
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("User", back_populates="dispatch")
 
 
 class Maintenance(UserMixin, db.Model):
@@ -78,6 +79,9 @@ class Maintenance(UserMixin, db.Model):
     tools_amt = db.Column(db.Float(precision=1))
     service_charge = db.Column(db.Float(precision=1))
     total_amt = db.Column(db.Float(precision=1))
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("User", back_populates="maintenance")
 
 
 class AdminExpenseTable(UserMixin, db.Model):
@@ -336,6 +340,7 @@ def input_maintenance():
             tools_amt=form.tools_amt.data,
             service_charge=form.service_charge.data,
             total_amt=form.pyesa_amt.data + form.tools_amt.data + form.service_charge.data,
+            encoded_by=current_user.first_name.title()
         )
         db.session.add(new_record)
         db.session.commit()
@@ -365,6 +370,7 @@ def edit_maintenance(maintenance_id):
         maintenance_to_edit.pyesa_amt = edit_form.pyesa_amt.data
         maintenance_to_edit.tools_amt = edit_form.tools_amt.data
         maintenance_to_edit.service_charge = edit_form.service_charge.data
+        maintenance_to_edit.encoded_by = current_user.first_name.title()
         db.session.commit()
         return redirect(url_for('maintenance'))
     return render_template("maintenance_input.html", form=edit_form)
@@ -409,7 +415,7 @@ def input_admin():
             frequency=form.frequency.data.title(),
             description=form.description.data.title(),
             amount=form.amount.data,
-            encoded_by=current_user.first_name
+            encoded_by=current_user.first_name.title()
         )
         db.session.add(new_record)
         db.session.commit()
@@ -437,6 +443,7 @@ def edit_admin(admin_id):
         admin_to_edit.frequency = edit_form.frequency.data.title()
         admin_to_edit.description = edit_form.description.data.title()
         admin_to_edit.amount = edit_form.amount.data
+        admin_to_edit.encoded_by = current_user.first_name.title()
         db.session.commit()
         return redirect(url_for('admin'))
     return render_template("admin_input.html", form=edit_form)

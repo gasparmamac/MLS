@@ -23,6 +23,7 @@
                     <th scope="col">Tools amt</th>
                     <th scope="col">Service charge</th>
                     <th scope="col">Total</th>
+                    <th scope="col">Encoded by</th>
                     <th scope="col">*</th>
                     <th scope="col">**</th>
                 </tr>
@@ -38,6 +39,7 @@
                     <td>{{ row[7] }}</td>
                     <td>{{ row[8] }}</td>
                     <td>{{ row[9] }}</td>
+                    <td>{{ row[10] }}</td>
                 <td><a href="{{ url_for('edit_maintenance', maintenance_id=row[1]) }}">Edit</a></td>
                 <td><a href="{{ url_for('delete_maintenance', maintenance_id=row[1]) }}">Delete</a></td>
                 </tr>
