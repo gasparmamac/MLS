@@ -142,6 +142,48 @@ class PayStrip(UserMixin, db.Model):
     carry_over_past_month = db.Column(db.Float(precision=2))
 
 
+class Employee(UserMixin, db.Model):
+    __tablename__ = "employee"
+    id = db.Column(db.Integer, primary_key=True)
+    # personal info
+    first_name = db.Column(db.String(100), nullable=False)
+    middle_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    extn_name = db.Column(db.String(100), nullable=False)
+    birthday = db.Column(db.String(100), nullable=False)
+    gender = db.Column(db.String(100), nullable=False)
+    # address
+    house_no = db.Column(db.String(100))
+    lot_no = db.Column(db.Strging(100))
+    sub_division = db.Column(db.String(100))
+    purok = db.Column(db.String(100))
+    brgy = db.Column(db.String(100), nullable=False)
+    district = db.Column(db.String(100), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    province = db.Column(db.String(100), nullable=False)
+    zip_code = db.Column(db.String(100), nullable=False)
+    # company related info
+    employee_id = db.Column(db.String(100), nullable=False)
+    date_hired = db.Column(db.String(100), nullable=False)
+    resigned_date = db.Column(db.String(100))
+    employment_status = db.Column(db.String(100), nullable=False)
+    # benefits ids
+    sss_no = db.Column(db.String(100))
+    philhealth_no = db.Column(db.String(100))
+    pag_ibig_no = db.Column(db.String(100))
+    # benefits premiums
+    sss_prem = db.Column(db.Float(precision=2))
+    philhealth_prem = db.Column(db.Float(precision=2))
+    pag_ibig_prem = db.Column(db.Float(precision=2))
+    life_insurance_prem = db.Column(db.Float(precision=2))
+
+    # compensation
+    basic = db.Column(db.Float(precision=2))
+    allowance1 = db.Column(db.Float(precision=2))
+    allowance2 = db.Column(db.Float(precision=2))
+    allowance3 = db.Column(db.Float(precision=2))
+
+
 # Run only once
 db.create_all()
 
@@ -504,7 +546,6 @@ def delete_admin(admin_id):
 # ---------------------------------------------------------Payroll----------------------------------------------------
 @app.route("/payroll", methods=["Get", "Post"])
 def payroll():
-    # todo 1. construct unpaid dispatch table
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         df = pd.read_sql_table(
             table_name="dispatch",
