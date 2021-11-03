@@ -154,7 +154,7 @@ class Employee(UserMixin, db.Model):
     gender = db.Column(db.String(100), nullable=False)
     # address
     house_no = db.Column(db.String(100))
-    lot_no = db.Column(db.Strging(100))
+    lot_no = db.Column(db.String(100))
     sub_division = db.Column(db.String(100))
     purok = db.Column(db.String(100))
     brgy = db.Column(db.String(100), nullable=False)
