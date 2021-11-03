@@ -1,6 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
-from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, current_user, logout_user
+from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, \
+    current_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
@@ -96,6 +97,49 @@ class AdminExpenseTable(UserMixin, db.Model):
     encoded_by = db.Column(db.String(100))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("User", back_populates="admin_exp")
+
+
+class PayStrip(UserMixin, db.Model):
+    __tablename__ = "pay_strip"
+    id = db.Column(db.Integer, primary_key=True)
+    # common info
+    pay_day = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.String(100), nullable=False)
+    end_date = db.Column(db.String(100), nullable=False)
+    employee_name = db.Column(db.String(100), nullable=False)
+    employee_id = db.Column(db.String(100), nullable=False)
+    # attendance
+    normal = db.Column(db.Integer)
+    reg_hol = db.Column(db.Integer)
+    no_sp_hol = db.Column(db.Integer)
+    wk_sp_hol = db.Column(db.Integer)
+    rd = db.Column(db.Integer)
+    equiv_wd = db.Column(db.Float(precision=2))
+    # pay
+    basic = db.Column(db.Float(precision=2))
+    allowance1 = db.Column(db.Float(precision=2))
+    allowance2 = db.Column(db.Float(precision=2))
+    allowance3 = db.Column(db.Float(precision=2))
+    pay_adj = db.Column(db.Float(precision=2))
+    pay_adj_reason = db.Column(db.String(250))
+    # deduction
+    cash_adv = db.Column(db.Float(precision=2))
+    ca_date = db.Column(db.String(100))
+    ca_deduction = db.Column(db.Float(precision=2))
+    ca_remaining = db.Column(db.Float(precision=2))
+    sss = db.Column(db.Float(precision=2))
+    philhealth = db.Column(db.Float(precision=2))
+    pag_ibig = db.Column(db.Float(precision=2))
+    life_insurance = db.Column(db.Float(precision=2))
+    income_tax = db.Column(db.Float(precision=2))
+    # summary
+    total_pay = db.Column(db.Float(precision=2))
+    total_deduct = db.Column(db.Float(precision=2))
+    net_pay = db.Column(db.Float(precision=2))
+    transferred_amt1 = db.Column(db.Float(precision=2))
+    transferred_amt2 = db.Column(db.Float(precision=2))
+    carry_over_next_month = db.Column(db.Float(precision=2))
+    carry_over_past_month = db.Column(db.Float(precision=2))
 
 
 # Run only once
@@ -455,6 +499,35 @@ def delete_admin(admin_id):
     db.session.delete(admin_to_delete)
     db.session.commit()
     return redirect(url_for('admin'))
+
+
+# ---------------------------------------------------------Payroll----------------------------------------------------
+@app.route("/payroll", methods=["Get", "Post"])
+def payroll():
+    # todo 1. construct unpaid dispatch table
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx, index_col='dispatch_date',
+            columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
+                     'route', 'area', 'cbm', 'qty', 'drops', 'plate_no',
+                     'driver', 'courier',
+                     ]
+        )
+    # todo 2. construct individual payslip from the unpaid dispatch table above
+    # todo 3. update dispatch and paystrip tables on click
+    return render_template("payroll.html", df=df)
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
