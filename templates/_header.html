@@ -20,21 +20,24 @@
         <li class="nav-item">
           <a class="nav-link active" aria-current="page" href="{{ url_for('home') }}">Home</a>
         </li>
-
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('dispatch') }}">Encode Dispatch</a>
-          </li>
-         <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('maintenance')}}"> Encode Maintenance Expenses</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('admin')}}">Encode Admin Expense</a>
-          </li>
          <li class="nav-item">
             <a class="nav-link" href="{{ url_for('payroll')}}">Payroll</a>
           </li>
 
         {% if current_user.is_authenticated %}
+
+          <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Encode
+          </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                  <li><a class="dropdown-item" href="{{ url_for('dispatch') }}">Dispatch</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('maintenance')}}">Maintenance</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('admin')}}">Admin Expenses</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('employees')}}">List of Employees</a></li>
+              </ul>
+          </li>
 
           <li class="nav-item">
             <a class="nav-link" href="{{ url_for('logout') }}">logout</a>

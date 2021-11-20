@@ -100,4 +100,52 @@ class AdminFilterForm(FlaskForm):
     submit = SubmitField("Apply filter")
 
 
+class EmployeeEntryForm(FlaskForm):
+    # personal info
+    first_name = StringField("First name", validators=[DataRequired()])
+    middle_name = StringField("Middle name", validators=[DataRequired()])
+    last_name = StringField("Last name", validators=[DataRequired()])
+    extn_name = StringField("Extension.  (N.A if not applicable)", validators=[DataRequired()])
+    birthday = DateField("Birthday", validators=[DataRequired()])
+    gender = StringField("Gender", validators=[DataRequired()])
+    # address
+    house_no = StringField("House no. (N.A if not applicable)", validators=[DataRequired()])
+    lot_no = StringField("Lot no. (N.A if not applicable)", validators=[DataRequired()])
+    block_no = StringField("Block no. (N.A if not applicable)", validators=[DataRequired()])
+    sub_division = StringField("Sub division. (N.A if not applicable)", validators=[DataRequired()])
+    purok = StringField("Purok. (N.A if not applicable)", validators=[DataRequired()])
+    brgy = StringField("Brgy. (N.A if not applicable)", validators=[DataRequired()])
+    district = StringField("District. (N.A if not applicable)", validators=[DataRequired()])
+    city = StringField("City", validators=[DataRequired()])
+    province = StringField("Province", validators=[DataRequired()])
+    zip_code = StringField("ZIP Code", validators=[DataRequired()])
+    submit = SubmitField("Add Employee")
+
+
+class EmployeeAdminEditForm(FlaskForm):
+    # company related info
+    employee_id = StringField("ID")
+    date_hired = DateField("Date hired")
+    date_resigned = DateField("Date resigned")
+    employment_status = SelectField(
+        choices=["Contractual", "Provisional", "Regular", "Awol", "Resigned"]
+    )
+    position = StringField("Position")
+    rank = StringField("Rank")
+    # benefits ids
+    sss_no = StringField("SSS no")
+    philhealth_no = StringField("PhilHealth no")
+    pag_ibig_no = StringField("Pag-ibig no")
+    # benefits premium
+    sss_prem = FloatField("SSS premium")
+    philhealth_prem = FloatField("PhilHealth premium")
+    pag_ibig_prem = FloatField("Pag-Ibig premium")
+    # compensation
+    basic = FloatField("Basic premium")
+    allowance1 = FloatField("Allowance1")
+    allowance2 = FloatField("Allowance2")
+    allowance3 = FloatField("Allowance3")
+    submit = SubmitField("Add")
+
+
 

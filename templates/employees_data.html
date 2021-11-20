@@ -1,0 +1,104 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title %}List of Employees{% endblock %}
+
+{% block content %}
+
+    {% include '_header.html' %}
+    <!--    Dispatch table-->
+    <div class="container my-5">
+        <h2>Employees List</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered table-sm">
+                <caption><a href="{{ url_for('employee_add')}}">Add employee</a> </caption>
+                <thead>
+                <tr>
+<!--                    personal info-->
+                    <th scope="col">First Name</th>
+                    <th scope="col">Middle Name</th>
+                    <th scope="col">Last Name</th>
+                    <th scope="col">Name Extension</th>
+                    <th scope="col">Birthday</th>
+                    <th scope="col">Gender</th>
+<!--                    address-->
+                    <th scope="col">House no</th>
+                    <th scope="col">Lot no</th>
+                    <th scope="col">Block no</th>
+                    <th scope="col">Sub Division</th>
+                    <th scope="col">Purok</th>
+                    <th scope="col">Barangay</th>
+                    <th scope="col">District</th>
+                    <th scope="col">City</th>
+                    <th scope="col">Province</th>
+                    <th scope="col">ZIP Code</th>
+<!--                    company related-->
+                    <th scope="col">Employee ID</th>
+                    <th scope="col">Date Hired</th>
+                    <th scope="col">Date Resigned</th>
+                    <th scope="col">Employment Status</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Rank</th>
+<!--                    benefits ids-->
+                    <th scope="col">SSS no</th>
+                    <th scope="col">PhilHealth no</th>
+                    <th scope="col">Pag-Ibig no</th>
+<!--                    benefits premium-->
+                    <th scope="col">SSS Premium</th>
+                    <th scope="col">PhilHealth premium</th>
+                    <th scope="col">Pag-Ibig premium</th>
+<!--                    compensation-->
+                    <th scope="col">Basic</th>
+                    <th scope="col">Allowance1</th>
+                    <th scope="col">Allowance2</th>
+                    <th scope="col">Allowance3</th>
+                    <th scope="col">*</th>
+                    <th scope="col">**</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in df.itertuples(): %}
+                <tr>
+                    <td>{{ row[2] }}</td>
+                    <td>{{ row[3] }}</td>
+                    <td>{{ row[4] }}</td>
+                    <td>{{ row[5] }}</td>
+                    <td>{{ row[6] }}</td>
+                    <td>{{ row[7] }}</td>
+                    <td>{{ row[8] }}</td>
+                    <td>{{ row[9] }}</td>
+                    <td>{{ row[10] }}</td>
+                    <td>{{ row[11] }}</td>
+                    <td>{{ row[12] }}</td>
+                    <td>{{ row[13] }}</td>
+                    <td>{{ row[14] }}</td>
+                    <td>{{ row[15] }}</td>
+                    <td>{{ row[16] }}</td>
+                    <td>{{ row[17] }}</td>
+                    <td>{{ row[18] }}</td>
+                    <td>{{ row[19] }}</td>
+                    <td>{{ row[20] }}</td>
+                    <td>{{ row[21] }}</td>
+                    <td>{{ row[22] }}</td>
+                    <td>{{ row[23] }}</td>
+                    <td>{{ row[24] }}</td>
+                    <td>{{ row[25] }}</td>
+                    <td>{{ row[26] }}</td>
+                    <td>{{ row[27] }}</td>
+                    <td>{{ row[28] }}</td>
+                    <td>{{ row[29] }}</td>
+                    <td>{{ row[30] }}</td>
+                    <td>{{ row[31] }}</td>
+                    <td>{{ row[32] }}</td>
+                    <td>{{ row[33] }}</td>
+                <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">Edit</a></td>
+                <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">Delete</a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!--content end-->
+    {% include '_footer.html' %}
+
+{% endblock  %}
