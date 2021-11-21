@@ -175,7 +175,7 @@ class SummaryTable(db.Model):
     strip = relationship("PayStripTable", back_populates="summary")
 
 
-class EmployeeTable(UserMixin, db.Model):
+class EmployeeProfileTable(UserMixin, db.Model):
     __tablename__ = "employee"
     id = db.Column(db.Integer, primary_key=True)
     # personal info
@@ -196,9 +196,15 @@ class EmployeeTable(UserMixin, db.Model):
     city = db.Column(db.String(100))
     province = db.Column(db.String(100))
     zip_code = db.Column(db.String(100))
+
     # children tables
+    company_related_info_id = db.Column(db.Integer, db.ForeignKey("company_related_info.id"))
     company_related_info = relationship("CompanyRelatedInfoTable", back_populates="employee")
+
+    benefits_id = db.Column(db.Integer, db.ForeignKey("benefits.id"))
     benefits = relationship("BenefitsTable", back_populates="employee")
+
+    compensation_id = db.Column(db.Integer, db.ForeignKey("compensation.id"))
     compensation = relationship("CompensationTable", back_populates="employee")
 
 
@@ -211,9 +217,7 @@ class CompanyRelatedInfoTable(db.Model):
     employment_status = db.Column(db.String(100))
     position = db.Column(db.String(100))
     rank = db.Column(db.String(100))
-    # parent table
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("employee.id"))
-    employee = relationship("EmployeeTable", back_populates="company_related_info")
+    employee = relationship("EmployeeProfileTable", back_populates="company_related_info")
 
 
 class BenefitsTable(db.Model):
@@ -226,19 +230,17 @@ class BenefitsTable(db.Model):
     sss_prem = db.Column(db.Float(precision=2))
     philhealth_prem = db.Column(db.Float(precision=2))
     pag_ibig_prem = db.Column(db.Float(precision=2))
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("employee.id"))
-    employee = relationship("EmployeeTable", back_populates="benefits")
+    employee = relationship("EmployeeProfileTable", back_populates="benefits")
 
 
 class CompensationTable(db.Model):
-    __tablename__ = " compensation"
+    __tablename__ = "compensation"
     id = db.Column(db.Integer, primary_key=True)
     basic = db.Column(db.Float(precision=2))
     allowance1 = db.Column(db.Float(precision=2))
     allowance2 = db.Column(db.Float(precision=2))
     allowance3 = db.Column(db.Float(precision=2))
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("employee.id"))
-    employee = relationship("EmployeeTable", back_populates="compensation")
+    employee = relationship("EmployeeProfileTable", back_populates="compensation")
 
 
 # Run only once
@@ -588,7 +590,7 @@ def edit_admin(admin_id):
         admin_to_edit.amount = edit_form.amount.data
         admin_to_edit.encoded_by = current_user.first_name.title()
         db.session.commit()
-        return redirect(url_for('admin'))
+        return redirect(url_for('employee'))
     return render_template("admin_input.html", form=edit_form)
 
 
@@ -613,7 +615,7 @@ def employees():
 def employee_add():
     form = EmployeeEntryForm()
     if form.validate_on_submit():
-        new_employee = EmployeeTable(
+        new_employee = EmployeeProfileTable(
             # personal info
             first_name=form.first_name.data,
             middle_name=form.middle_name.data,
@@ -632,6 +634,9 @@ def employee_add():
             city=form.city.data,
             province=form.province.data,
             zip_code=form.zip_code.data,
+            company_related_info=CompanyRelatedInfoTable(),
+            benefits=BenefitsTable(),
+            compensation=CompensationTable()
         )
         db.session.add(new_employee)
         db.session.commit()
@@ -641,7 +646,7 @@ def employee_add():
 
 @app.route("/employee_edit/<int:employee_index>", methods=["Get", "Post"])
 def employee_edit(employee_index):
-    employee_to_edit = EmployeeTable.query.get(employee_index)
+    employee_to_edit = EmployeeProfileTable.query.get(employee_index)
     # pre-load form
     edit_form = EmployeeEntryForm(
         first_name=employee_to_edit.first_name,
@@ -660,6 +665,7 @@ def employee_edit(employee_index):
         city=employee_to_edit.city,
         province=employee_to_edit.province,
         zip_code=employee_to_edit.zip_code
+
     )
     # reload edited form to db
     if edit_form.validate_on_submit():
@@ -684,9 +690,53 @@ def employee_edit(employee_index):
     return render_template("employees_input.html", form=edit_form)
 
 
+@app.route("/employee_admin_edit/<int:employee_index>", methods=["Get", "Post"])
+def employee_admin_edit(employee_index):
+    employee_to_edit = EmployeeProfileTable.query.get(employee_index)
+    # pre-load form
+    edit_form = EmployeeAdminEditForm(
+        employee_id=employee_to_edit.company_related_info.employee_id,
+        date_hired=employee_to_edit.company_related_info.date_hired,
+        date_resigned=employee_to_edit.company_related_info.date_resigned,
+        employment_status=employee_to_edit.company_related_info.employment_status,
+        position=employee_to_edit.company_related_info.position,
+        rank=employee_to_edit.company_related_info.rank,
+        sss_no=employee_to_edit.benefits.sss_no,
+        philhealth_no=employee_to_edit.benefits.philhealth_no,
+        pag_ibig_no=employee_to_edit.pag_ibig_no,
+        sss_prem=employee_to_edit.benefits.sss_prem,
+        philhealth_prem=employee_to_edit.benefits.philhealth_prem,
+        pag_ibig_prem=employee_to_edit.benefits.pag_ibig_prem,
+        basic=employee_to_edit.compensation.basic,
+        allowance1=employee_to_edit.compensation.allowance1,
+        allowance2=employee_to_edit.compensation.allowance2,
+        allowance3=employee_to_edit.compensation.allowance3
+    )
+    if edit_form.validate_on_submit():
+        employee_to_edit.company_related_info.employee_id = edit_form.employee_id.data
+        employee_to_edit.company_related_info.date_hired = edit_form.date_hired.data
+        employee_to_edit.company_related_info.date_resigned = edit_form.date_resigned.data
+        employee_to_edit.company_related_info.employment_status = edit_form.employment_status.data
+        employee_to_edit.company_related_info.position = edit_form.position.data
+        employee_to_edit.company_related_info.rank = edit_form.rank.data
+        employee_to_edit.benefits.sss_no = edit_form.sss_no.data
+        employee_to_edit.benefits.philhealth_no = edit_form.philhealth_no.data
+        employee_to_edit.pag_ibig_no = edit_form.pag_ibig_no.data
+        employee_to_edit.benefits.sss_prem = edit_form.sss_prem.data
+        employee_to_edit.benefits.philhealth_prem = edit_form.philhealth_prem.data
+        employee_to_edit.benefits.pag_ibig_prem, = edit_form.pag_ibig_prem.data
+        employee_to_edit.compensation.basic = edit_form.basic.data
+        employee_to_edit.compensation.allowance1 = edit_form.allowance1.data
+        employee_to_edit.compensation.allowance2 = edit_form.allowance2.data
+        employee_to_edit.compensation.allowance3 = edit_form.allowance3.data
+        db.session.commit()
+        return redirect(url_for("employees"))
+    return render_template("employees_input.html", form=edit_form)
+
+
 @app.route("/employee_delete/<int:employee_index>", methods=["Get", "Post"])
 def employee_delete(employee_index):
-    employee_to_delete = EmployeeTable.query.get(employee_index)
+    employee_to_delete = EmployeeProfileTable.query.get(employee_index)
     db.session.delete(employee_to_delete)
     db.session.commit()
     return redirect(url_for('employees'))
