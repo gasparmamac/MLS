@@ -199,13 +199,13 @@ class EmployeeProfileTable(UserMixin, db.Model):
 
     # children tables
     company_related_info_id = db.Column(db.Integer, db.ForeignKey("company_related_info.id"))
-    company_related_info = relationship("CompanyRelatedInfoTable", back_populates="employee")
+    company_related_info = relationship("CompanyRelatedInfoTable", back_populates="employee", cascade="all, delete")
 
     benefits_id = db.Column(db.Integer, db.ForeignKey("benefits.id"))
-    benefits = relationship("BenefitsTable", back_populates="employee")
+    benefits = relationship("BenefitsTable", back_populates="employee", cascade="all, delete")
 
     compensation_id = db.Column(db.Integer, db.ForeignKey("compensation.id"))
-    compensation = relationship("CompensationTable", back_populates="employee")
+    compensation = relationship("CompensationTable", back_populates="employee", cascade="all, delete")
 
 
 class CompanyRelatedInfoTable(db.Model):
@@ -703,7 +703,7 @@ def employee_admin_edit(employee_index):
         rank=employee_to_edit.company_related_info.rank,
         sss_no=employee_to_edit.benefits.sss_no,
         philhealth_no=employee_to_edit.benefits.philhealth_no,
-        pag_ibig_no=employee_to_edit.pag_ibig_no,
+        pag_ibig_no=employee_to_edit.benefits.pag_ibig_no,
         sss_prem=employee_to_edit.benefits.sss_prem,
         philhealth_prem=employee_to_edit.benefits.philhealth_prem,
         pag_ibig_prem=employee_to_edit.benefits.pag_ibig_prem,
@@ -724,7 +724,7 @@ def employee_admin_edit(employee_index):
         employee_to_edit.pag_ibig_no = edit_form.pag_ibig_no.data
         employee_to_edit.benefits.sss_prem = edit_form.sss_prem.data
         employee_to_edit.benefits.philhealth_prem = edit_form.philhealth_prem.data
-        employee_to_edit.benefits.pag_ibig_prem, = edit_form.pag_ibig_prem.data
+        employee_to_edit.benefits.pag_ibig_prem = edit_form.pag_ibig_prem.data
         employee_to_edit.compensation.basic = edit_form.basic.data
         employee_to_edit.compensation.allowance1 = edit_form.allowance1.data
         employee_to_edit.compensation.allowance2 = edit_form.allowance2.data
@@ -732,6 +732,7 @@ def employee_admin_edit(employee_index):
         db.session.commit()
         return redirect(url_for("employees"))
     return render_template("employees_input.html", form=edit_form)
+
 
 
 @app.route("/employee_delete/<int:employee_index>", methods=["Get", "Post"])

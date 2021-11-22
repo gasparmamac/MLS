@@ -53,6 +53,7 @@
                     <th scope="col">Allowance3</th>
                     <th scope="col">*</th>
                     <th scope="col">**</th>
+                    <th scope="col">***</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -92,6 +93,7 @@
                     <td>{{ row[33] }}</td>
                 <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">Edit</a></td>
                 <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">Delete</a></td>
+                <td><a href="{{ url_for('employee_admin_edit', employee_index=row[1]) }}">Admin Edit</a></td>
                 </tr>
                 {% endfor %}
                 </tbody>
