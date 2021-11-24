@@ -5,11 +5,11 @@ from flask_login import UserMixin, login_user, LoginManager, fresh_login_require
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
-# from forms import LoginForm, RegisterForm, DispatchForm, DispatchTableFilterForm, MaintenanceForm, \
-#     MaintenanceFilterForm, AdminExpenseForm, AdminFilterForm
-from forms import *
+
+from _table import *
+from _forms import *
+
 from datetime import datetime, date
-from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 import os
 
@@ -26,225 +26,6 @@ Bootstrap(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-
-
-# Database tables
-class UserTable(UserMixin, db.Model):
-    __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
-    first_name = db.Column(db.String(100))
-    middle_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
-    dispatch = relationship("DispatchTable", back_populates="encoder")
-    admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
-    maintenance = relationship("MaintenanceTable", back_populates="encoder")
-
-
-class DispatchTable(UserMixin, db.Model):
-    __tablename__ = "dispatch"
-    id = db.Column(db.Integer, primary_key=True)
-    dispatch_date = db.Column(db.String(100), nullable=False)
-    wd_code = db.Column(db.String(100), nullable=False)
-    slip_no = db.Column(db.String(100), nullable=False)
-    route = db.Column(db.String(100), nullable=False)
-    area = db.Column(db.String(250))
-    odo_start = db.Column(db.Integer)
-    odo_end = db.Column(db.Integer)
-    km = db.Column(db.Float(precision=1))
-    cbm = db.Column(db.String(100), nullable=False)
-    qty = db.Column(db.String(100), nullable=False)
-    drops = db.Column(db.String(100), nullable=False)
-    rate = db.Column(db.String(100), nullable=False)
-    plate_no = db.Column(db.String(100), nullable=False)
-    driver = db.Column(db.String(100), nullable=False)
-    courier = db.Column(db.String(100), nullable=False)
-    pay_day = db.Column(db.String(100), nullable=False)
-    invoice_no = db.Column(db.String(100))
-    or_no = db.Column(db.String(100))
-    or_amt = db.Column(db.Float(precision=1))
-    encoded_on = db.Column(db.String(100), nullable=False)
-    encoded_by = db.Column(db.String(100))
-    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    encoder = relationship("UserTable", back_populates="dispatch")
-
-
-class MaintenanceTable(UserMixin, db.Model):
-    __tablename__ = "maintenance"
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.String(100), nullable=False)
-    plate_no = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(100), nullable=False)
-    comment = db.Column(db.String(250), nullable=False)
-    pyesa_amt = db.Column(db.Float(precision=1))
-    tools_amt = db.Column(db.Float(precision=1))
-    service_charge = db.Column(db.Float(precision=1))
-    total_amt = db.Column(db.Float(precision=1))
-    encoded_by = db.Column(db.String(100))
-    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    encoder = relationship("UserTable", back_populates="maintenance")
-
-
-class AdminExpenseTable(UserMixin, db.Model):
-    __tablename__ = "admin"
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.String(100), nullable=False)
-    agency = db.Column(db.String(100), nullable=False)
-    office = db.Column(db.String(100), nullable=False)
-    frequency = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(250), nullable=False)
-    amount = db.Column(db.Float(precision=1))
-    encoded_by = db.Column(db.String(100))
-    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    encoder = relationship("UserTable", back_populates="admin_exp")
-
-
-class PayStripTable(UserMixin, db.Model):
-    __tablename__ = "pay_strip"
-    id = db.Column(db.Integer, primary_key=True)
-    pay_day = db.Column(db.String(100), nullable=False)
-    start_date = db.Column(db.String(100), nullable=False)
-    end_date = db.Column(db.String(100), nullable=False)
-    employee_name = db.Column(db.String(100), nullable=False)
-    employee_id = db.Column(db.String(100), nullable=False)
-    # children tables
-    attendance = relationship("AttendanceTable", back_populates="strip")
-    pay = relationship("PayTable", back_populates="strip")
-    deduction = relationship("DeductionTable", back_populates="strip")
-    summary = relationship("SummaryTable", back_populates="strip")
-
-
-class AttendanceTable(db.Model):
-    __tablename__ = "attendance"
-    id = db.Column(db.Integer, primary_key=True)
-    normal = db.Column(db.Integer)
-    reg_hol = db.Column(db.Integer)
-    no_sp_hol = db.Column(db.Integer)
-    wk_sp_hol = db.Column(db.Integer)
-    rd = db.Column(db.Integer)
-    equiv_wd = db.Column(db.Float(precision=2))
-    # parent table
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("pay_strip.id"))
-    strip = relationship("PayStripTable", back_populates="attendance")
-
-
-class PayTable(db.Model):
-    __tablename__ = "pay"
-    id = db.Column(db.Integer, primary_key=True)
-    basic = db.Column(db.Float(precision=2))
-    allowance1 = db.Column(db.Float(precision=2))
-    allowance2 = db.Column(db.Float(precision=2))
-    allowance3 = db.Column(db.Float(precision=2))
-    pay_adj = db.Column(db.Float(precision=2))
-    pay_adj_reason = db.Column(db.String(250))
-    # parent table
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("pay_strip.id"))
-    strip = relationship("PayStripTable", back_populates="pay")
-
-
-class DeductionTable(db.Model):
-    __tablename__ = "deduction"
-    id = db.Column(db.Integer, primary_key=True)
-    cash_adv = db.Column(db.Float(precision=2))
-    ca_date = db.Column(db.String(100))
-    ca_deduction = db.Column(db.Float(precision=2))
-    ca_remaining = db.Column(db.Float(precision=2))
-    sss = db.Column(db.Float(precision=2))
-    philhealth = db.Column(db.Float(precision=2))
-    pag_ibig = db.Column(db.Float(precision=2))
-    life_insurance = db.Column(db.Float(precision=2))
-    income_tax = db.Column(db.Float(precision=2))
-    # parent table
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("pay_strip.id"))
-    strip = relationship("PayStripTable", back_populates="deduction")
-
-
-class SummaryTable(db.Model):
-    __tablename__ = "summary"
-    id = db.Column(db.Integer, primary_key=True)
-    total_pay = db.Column(db.Float(precision=2))
-    total_deduct = db.Column(db.Float(precision=2))
-    net_pay = db.Column(db.Float(precision=2))
-    transferred_amt1 = db.Column(db.Float(precision=2))
-    transferred_amt2 = db.Column(db.Float(precision=2))
-    carry_over_next_month = db.Column(db.Float(precision=2))
-    carry_over_past_month = db.Column(db.Float(precision=2))
-    # parent table
-    pay_strip_id = db.Column(db.Integer, db.ForeignKey("pay_strip.id"))
-    strip = relationship("PayStripTable", back_populates="summary")
-
-
-class EmployeeProfileTable(UserMixin, db.Model):
-    __tablename__ = "employee"
-    id = db.Column(db.Integer, primary_key=True)
-    # personal info
-    first_name = db.Column(db.String(100), nullable=False)
-    middle_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    extn_name = db.Column(db.String(100), nullable=False)
-    birthday = db.Column(db.String(100), nullable=False)
-    gender = db.Column(db.String(100), nullable=False)
-    # address
-    house_no = db.Column(db.String(100))
-    lot_no = db.Column(db.String(100))
-    block_no = db.Column(db.String(100))
-    sub_division = db.Column(db.String(100))
-    purok = db.Column(db.String(100))
-    brgy = db.Column(db.String(100))
-    district = db.Column(db.String(100))
-    city = db.Column(db.String(100))
-    province = db.Column(db.String(100))
-    zip_code = db.Column(db.String(100))
-
-    # children tables
-    company_related_info_id = db.Column(db.Integer, db.ForeignKey("company_related_info.id"))
-    company_related_info = relationship("CompanyRelatedInfoTable", back_populates="employee", cascade="all, delete")
-
-    benefits_id = db.Column(db.Integer, db.ForeignKey("benefits.id"))
-    benefits = relationship("BenefitsTable", back_populates="employee", cascade="all, delete")
-
-    compensation_id = db.Column(db.Integer, db.ForeignKey("compensation.id"))
-    compensation = relationship("CompensationTable", back_populates="employee", cascade="all, delete")
-
-
-class CompanyRelatedInfoTable(db.Model):
-    __tablename__ = "company_related_info"
-    id = db.Column(db.Integer, primary_key=True)
-    employee_id = db.Column(db.String(100))
-    date_hired = db.Column(db.String(100))
-    date_resigned = db.Column(db.String(100))
-    employment_status = db.Column(db.String(100))
-    position = db.Column(db.String(100))
-    rank = db.Column(db.String(100))
-    employee = relationship("EmployeeProfileTable", back_populates="company_related_info")
-
-
-class BenefitsTable(db.Model):
-    __tablename__ = "benefits"
-    id = db.Column(db.Integer, primary_key=True)
-    sss_no = db.Column(db.String(100))
-    philhealth_no = db.Column(db.String(100))
-    pag_ibig_no = db.Column(db.String(100))
-    # benefits premiums
-    sss_prem = db.Column(db.Float(precision=2))
-    philhealth_prem = db.Column(db.Float(precision=2))
-    pag_ibig_prem = db.Column(db.Float(precision=2))
-    employee = relationship("EmployeeProfileTable", back_populates="benefits")
-
-
-class CompensationTable(db.Model):
-    __tablename__ = "compensation"
-    id = db.Column(db.Integer, primary_key=True)
-    basic = db.Column(db.Float(precision=2))
-    allowance1 = db.Column(db.Float(precision=2))
-    allowance2 = db.Column(db.Float(precision=2))
-    allowance3 = db.Column(db.Float(precision=2))
-    employee = relationship("EmployeeProfileTable", back_populates="compensation")
-
-
-# Run only once
-db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -754,17 +535,23 @@ def payroll():
             columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
                      'route', 'area', 'cbm', 'qty', 'drops', 'plate_no',
                      'driver', 'courier', 'pay_day'
-                     ]
+                     ],
         )
-    df1 = df.groupby(['dispatch_date', 'driver']).count()
-    df2 = df.groupby(['dispatch_date', 'courier']).count()
-    sum_df = pd.concat(df1, df2).to_html(
-        classes="table table-striped table-hover table-bordered table-sm",
-    )
-    # todo 2. construct individual payslip from the unpaid dispatch table above
-    # todo 3. update dispatch and paystrip tables on click
-    return render_template("payroll.html", df=df, sum_df=sum_df)
+      
+        sum_df1 = df.groupby(['wd_code', 'driver']).aggregate({'slip_no': 'count'}).unstack()
+        sum_df2 = df.groupby(['wd_code', 'courier']).aggregate({'slip_no': 'count'}).unstack()
+        sum_df = pd.concat([sum_df1, sum_df2], axis=1).to_html(
+            na_rep=0.0,
+            header=True,
+            index_names=False,
+            justify='match-parent',
+            classes="table table-striped table-hover table-bordered table-sm"
+        )
 
+
+    # todo 3. update dispatch and paystrip tables on click
+
+    return render_template("payroll.html", df=df, sum_df=sum_df)
 
 
 

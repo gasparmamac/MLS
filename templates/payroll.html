@@ -5,9 +5,9 @@
 {% block content %}
 
     {% include '_header.html' %}
-    <!--    Dispatch table-->
+    <!--    Unpaid dispatch table-->
     <div class="container my-5">
-        <h2>Unpaid dispatch</h2>
+        <h2>Payable dispatch</h2>
         <div class="table-responsive">
             <table class="table table-striped table-hover table-bordered table-sm">
                 <caption>List of payable dispatch</caption>
@@ -51,16 +51,33 @@
                 </tbody>
             </table>
         </div>
+
+<!--        Individual dispatch summary-->
         <div class="row">
+             <h2>Individual dispatch summary</h2>
+
             <div class="col">
                 <div class="table-responsive">
-                    {{sum_df | safe}}
-                    <h2>Unpaid dispatch summary</h2>
+                   {{sum_df | safe}}
                 </div>
+                <button class="btn btn-primary">Pay</button>
             </div>
         </div>
-    </div>
 
+
+<!--        Current paystrip-->
+        <div class="row">
+             <h2>Pay slip</h2>
+
+            <div class="col">
+                <div class="table-responsive">
+                   {{pay_strip_df | safe}}
+                </div>
+                <button class="btn btn-primary">Pay</button>
+            </div>
+        </div>
+
+  </div>
 
 
 

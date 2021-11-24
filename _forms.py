@@ -148,4 +148,37 @@ class EmployeeAdminEditForm(FlaskForm):
     submit = SubmitField("Add")
 
 
+class PayStripForm(FlaskForm):
+    start_date = DateField("From")
+    end_date = DateField("To")
+    employee_name = StringField("Name")
+    employee_id = StringField("ID")
+    # attendance
+    normal = IntegerField("Normal")
+    reg_hol = IntegerField("Regular holiday")
+    no_sp_hol = IntegerField("Non working special holiday")
+    wk_sp_hol = IntegerField("Working special holiday")
+    rd = IntegerField("Rest day")
+    # pay
+    basic = FloatField("Basic")
+    allowance1 = FloatField("Allowance1")
+    allowance2 = FloatField("Allowance2")
+    allowance3 = FloatField("Allowance3")
+    # deduction
+    cash_adv = FloatField("Cash advance")
+    ca_date = DateField("C.A. date")
+    ca_deduction = FloatField("C.A. deduction")
+    ca_remaining = FloatField("C.A. remaining")
+    sss = FloatField("SSS")
+    philhealth = FloatField("PhilHealth")
+    pag_ibig = FloatField("Pag-Ibig")
+    life_insurance = FloatField("Life insurance")
+    income_tax = FloatField("Income tax")
+    # summary
+    total_pay = FloatField("Gross pay")
+
+
+
+
+
 
