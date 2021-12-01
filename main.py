@@ -325,8 +325,8 @@ def dispatch():
 @login_required
 def input_dispatch():
     form = DispatchForm()
-    form.driver.choices = [(g.first_name, g.first_name) for g in EmployeeProfileTable.query.order_by("first_name")]
-    form.courier.choices = [(g.first_name, g.first_name) for g in EmployeeProfileTable.query.order_by("first_name")]
+    form.driver.choices = [(g.full_name, g.full_name) for g in EmployeeProfileTable.query.order_by("full_name")]
+    form.courier.choices = [(g.full_name, g.full_name) for g in EmployeeProfileTable.query.order_by("full_name")]
     if form.validate_on_submit():
         # Add new dispatch to database
         new_dispatch = DispatchTable(
@@ -380,7 +380,7 @@ def edit_dispatch(dispatch_id):
     )
     # choices for select field
     choices = ["?"]
-    a = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
+    a = [g.full_name for g in EmployeeProfileTable.query.order_by("full_name")]
     choices += a
     edit_form.driver.choices = choices
     edit_form.courier.choices = choices
