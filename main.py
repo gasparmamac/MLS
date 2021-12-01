@@ -162,16 +162,6 @@ class EmployeeProfileTable(UserMixin, db.Model):
 
     # address
     address = db.Column(db.String(100))
-    house_no = db.Column(db.Integer())
-    lot_no = db.Column(db.Integer())
-    block_no = db.Column(db.String(100))
-    sub_division = db.Column(db.String(100))
-    purok = db.Column(db.String(100))
-    brgy = db.Column(db.String(100))
-    district = db.Column(db.String(100))
-    city = db.Column(db.String(100))
-    province = db.Column(db.String(100))
-    zip_code = db.Column(db.String(100))
 
     # CompanyInfo
     employee_id = db.Column(db.String(100))
@@ -203,7 +193,7 @@ class EmployeeProfileTable(UserMixin, db.Model):
 
 
 # Run only once
-# db.create_all()
+db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -581,6 +571,7 @@ def employees():
 def employee_add():
     form = EmployeeEntryForm()
     if form.validate_on_submit():
+
         new_employee = EmployeeProfileTable(
             # personal info
             first_name=form.first_name.data.title(),
@@ -591,16 +582,7 @@ def employee_add():
             gender=form.gender.data.title(),
             full_name=f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()}",
             # address
-            house_no=form.house_no.data,
-            lot_no=form.lot_no.data,
-            block_no=form.block_no.data,
-            sub_division=form.sub_division.data.title(),
-            purok=form.purok.data.title(),
-            brgy=form.brgy.data.title(),
-            district=form.district.data.title(),
-            city=form.city.data.title(),
-            province=form.province.data.title(),
-            zip_code=form.zip_code.data.upper(),
+            address=form.address.data.title(),
             # CompanyInfo
             employee_id="?",
             date_hired=date.today().strftime("%Y-%m-%d-%a"),
@@ -645,16 +627,7 @@ def employee_edit(employee_index):
         extn_name=employee_to_edit.extn_name,
         birthday=datetime.strptime(employee_to_edit.birthday, "%Y-%m-%d-%a"),
         gender=employee_to_edit.gender,
-        house_no=employee_to_edit.house_no,
-        lot_no=employee_to_edit.lot_no,
-        block_no=employee_to_edit.block_no,
-        sub_division=employee_to_edit.sub_division,
-        purok=employee_to_edit.purok,
-        brgy=employee_to_edit.brgy,
-        district=employee_to_edit.district,
-        city=employee_to_edit.city,
-        province=employee_to_edit.province,
-        zip_code=employee_to_edit.zip_code
+        address=employee_to_edit.address
 
     )
     # reload edited form to db
@@ -666,16 +639,7 @@ def employee_edit(employee_index):
         employee_to_edit.full_name = f"{edit_form.first_name.data.title()} {edit_form.middle_name.data[0].title()}. {edit_form.last_name.data.title()} {edit_form.extn_name.data.title()}"
         employee_to_edit.birthday = edit_form.birthday.data.strftime("%Y-%m-%d-%a")
         employee_to_edit.gender = edit_form.gender.data.title()
-        employee_to_edit.house_no = edit_form.house_no.data
-        employee_to_edit.lot_no = edit_form.lot_no.data
-        employee_to_edit.block_no = edit_form.block_no.data
-        employee_to_edit.sub_division = edit_form.sub_division.data.title()
-        employee_to_edit.purok = edit_form.purok.data.title()
-        employee_to_edit.brgy = edit_form.brgy.data.title()
-        employee_to_edit.district = edit_form.district.data.title()
-        employee_to_edit.city = edit_form.city.data.title()
-        employee_to_edit.province = edit_form.province.data.title()
-        employee_to_edit.zip_code = edit_form.zip_code.data.upper()
+        employee_to_edit.address = edit_form.address.data.title()
         db.session.commit()
         return redirect(url_for("employees"))
     return render_template("employees_input.html", form=edit_form)

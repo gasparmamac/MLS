@@ -1,7 +1,8 @@
 import string
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField
+from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField, \
+    TextAreaField
 from wtforms.validators import DataRequired
 from wtforms.fields.html5 import DateField, DateTimeField
 
@@ -109,20 +110,11 @@ class EmployeeEntryForm(FlaskForm):
     first_name = StringField("First name", validators=[DataRequired()])
     middle_name = StringField("Middle name", validators=[DataRequired()])
     last_name = StringField("Last name", validators=[DataRequired()])
-    extn_name = StringField("Extension.  (none if not applicable)", validators=[DataRequired()])
+    extn_name = SelectField("Extension.", choices=["", "Jr.", "Sr.", "I", "II", "III", "IV", "V"])
     birthday = DateField("Birthday", validators=[DataRequired()])
     gender = StringField("Gender", validators=[DataRequired()])
     # address
-    house_no = StringField("House no. (none if not applicable)")
-    lot_no = StringField("Lot no. (none if not applicable)")
-    block_no = StringField("Block no. (none if not applicable)")
-    sub_division = StringField("Sub division. (none if not applicable)")
-    purok = StringField("Purok. (none if not applicable)")
-    brgy = StringField("Brgy.", validators=[DataRequired()])
-    district = StringField("District", validators=[DataRequired()])
-    city = StringField("City", validators=[DataRequired()])
-    province = StringField("Province", validators=[DataRequired()])
-    zip_code = StringField("ZIP Code", validators=[DataRequired()])
+    address = TextAreaField("Address", validators=[DataRequired()])
     submit = SubmitField("Add Employee")
 
 

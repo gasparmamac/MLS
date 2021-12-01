@@ -22,16 +22,7 @@
                     <th scope="col">Birthday</th>
                     <th scope="col">Gender</th>
 <!--                    address-->
-                    <th scope="col">House no</th>
-                    <th scope="col">Lot no</th>
-                    <th scope="col">Block no</th>
-                    <th scope="col">Sub Division</th>
-                    <th scope="col">Purok</th>
-                    <th scope="col">Barangay</th>
-                    <th scope="col">District</th>
-                    <th scope="col">City</th>
-                    <th scope="col">Province</th>
-                    <th scope="col">ZIP Code</th>
+                    <th scope="col">Address</th>
 <!--                    company related-->
                     <th scope="col">Employee ID</th>
                     <th scope="col">Date Hired</th>
@@ -93,15 +84,6 @@
                     <td>{{ row[27] }}</td>
                     <td>{{ row[28] }}</td>
                     <td>{{ row[29] }}</td>
-                    <td>{{ row[30] }}</td>
-                    <td>{{ row[31] }}</td>
-                    <td>{{ row[32] }}</td>
-                    <td>{{ row[33] }}</td>
-                    <td>{{ row[34] }}</td>
-                    <td>{{ row[35] }}</td>
-                    <td>{{ row[36] }}</td>
-                    <td>{{ row[37] }}</td>
-                    <td>{{ row[38] }}</td>
                 <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">Edit</a></td>
                 <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">Delete</a></td>
                 <td><a href="{{ url_for('employee_admin_edit', employee_index=row[1]) }}">Admin Edit</a></td>
