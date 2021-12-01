@@ -1,3 +1,5 @@
+import string
+
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField
 from wtforms.validators import DataRequired
@@ -47,8 +49,10 @@ class DispatchForm(FlaskForm):
     drops = IntegerField("Drops", validators=[DataRequired()])
     rate = FloatField("Rate", validators=[DataRequired()])
     plate_no = StringField("Plate no", validators=[DataRequired()])
-    driver = StringField("Driver", validators=[DataRequired()])
-    courier = StringField("Courier", validators=[DataRequired()])
+    # driver = StringField("Driver", validators=[DataRequired()])
+    driver = SelectField(u"Driver")
+    # courier = StringField("Courier", validators=[DataRequired()])
+    courier = SelectField("Courier")
     submit = SubmitField("Submit")
 
 
@@ -105,17 +109,17 @@ class EmployeeEntryForm(FlaskForm):
     first_name = StringField("First name", validators=[DataRequired()])
     middle_name = StringField("Middle name", validators=[DataRequired()])
     last_name = StringField("Last name", validators=[DataRequired()])
-    extn_name = StringField("Extension.  (N.A if not applicable)", validators=[DataRequired()])
+    extn_name = StringField("Extension.  (none if not applicable)", validators=[DataRequired()])
     birthday = DateField("Birthday", validators=[DataRequired()])
     gender = StringField("Gender", validators=[DataRequired()])
     # address
-    house_no = StringField("House no. (N.A if not applicable)", validators=[DataRequired()])
-    lot_no = StringField("Lot no. (N.A if not applicable)", validators=[DataRequired()])
-    block_no = StringField("Block no. (N.A if not applicable)", validators=[DataRequired()])
-    sub_division = StringField("Sub division. (N.A if not applicable)", validators=[DataRequired()])
-    purok = StringField("Purok. (N.A if not applicable)", validators=[DataRequired()])
-    brgy = StringField("Brgy. (N.A if not applicable)", validators=[DataRequired()])
-    district = StringField("District. (N.A if not applicable)", validators=[DataRequired()])
+    house_no = StringField("House no. (none if not applicable)")
+    lot_no = StringField("Lot no. (none if not applicable)")
+    block_no = StringField("Block no. (none if not applicable)")
+    sub_division = StringField("Sub division. (none if not applicable)")
+    purok = StringField("Purok. (none if not applicable)")
+    brgy = StringField("Brgy.", validators=[DataRequired()])
+    district = StringField("District", validators=[DataRequired()])
     city = StringField("City", validators=[DataRequired()])
     province = StringField("Province", validators=[DataRequired()])
     zip_code = StringField("ZIP Code", validators=[DataRequired()])
@@ -126,7 +130,6 @@ class EmployeeAdminEditForm(FlaskForm):
     # company related info
     employee_id = StringField("ID")
     date_hired = DateField("Date hired")
-    date_resigned = DateField("Date resigned")
     employment_status = SelectField(
         choices=["Contractual", "Provisional", "Regular", "Awol", "Resigned"]
     )

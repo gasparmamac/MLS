@@ -2,11 +2,11 @@ from flask import Flask, render_template, redirect, url_for, abort, flash
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, \
     current_user, logout_user
+from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 
-from _table import *
 from _forms import *
 
 from datetime import datetime, date
@@ -26,6 +26,182 @@ Bootstrap(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+
+# Tables------------------------------------------------------------------
+
+class UserTable(UserMixin, db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True)
+    password = db.Column(db.String(100))
+    first_name = db.Column(db.String(100))
+    middle_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    dispatch = relationship("DispatchTable", back_populates="encoder")
+    admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
+    maintenance = relationship("MaintenanceTable", back_populates="encoder")
+
+
+class DispatchTable(UserMixin, db.Model):
+    __tablename__ = "dispatch"
+    id = db.Column(db.Integer, primary_key=True)
+    dispatch_date = db.Column(db.String(100), nullable=False)
+    wd_code = db.Column(db.String(100), nullable=False)
+    slip_no = db.Column(db.String(100), nullable=False)
+    route = db.Column(db.String(100), nullable=False)
+    area = db.Column(db.String(250))
+    odo_start = db.Column(db.Integer)
+    odo_end = db.Column(db.Integer)
+    km = db.Column(db.Float(precision=1))
+    cbm = db.Column(db.String(100), nullable=False)
+    qty = db.Column(db.String(100), nullable=False)
+    drops = db.Column(db.String(100), nullable=False)
+    rate = db.Column(db.String(100), nullable=False)
+    plate_no = db.Column(db.String(100), nullable=False)
+    driver = db.Column(db.String(100), nullable=False)
+    courier = db.Column(db.String(100), nullable=False)
+    pay_day = db.Column(db.String(100), nullable=False)
+    invoice_no = db.Column(db.String(100))
+    or_no = db.Column(db.String(100))
+    or_amt = db.Column(db.Float(precision=1))
+    encoded_on = db.Column(db.String(100), nullable=False)
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("UserTable", back_populates="dispatch")
+
+
+class MaintenanceTable(UserMixin, db.Model):
+    __tablename__ = "maintenance"
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(100), nullable=False)
+    plate_no = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(100), nullable=False)
+    comment = db.Column(db.String(250), nullable=False)
+    pyesa_amt = db.Column(db.Float(precision=1))
+    tools_amt = db.Column(db.Float(precision=1))
+    service_charge = db.Column(db.Float(precision=1))
+    total_amt = db.Column(db.Float(precision=1))
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("UserTable", back_populates="maintenance")
+
+
+class AdminExpenseTable(UserMixin, db.Model):
+    __tablename__ = "admin"
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(100), nullable=False)
+    agency = db.Column(db.String(100), nullable=False)
+    office = db.Column(db.String(100), nullable=False)
+    frequency = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(250), nullable=False)
+    amount = db.Column(db.Float(precision=1))
+    encoded_by = db.Column(db.String(100))
+    encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    encoder = relationship("UserTable", back_populates="admin_exp")
+
+
+class PayStripTable(UserMixin, db.Model):
+    __tablename__ = "pay_strip"
+    id = db.Column(db.Integer, primary_key=True)
+    pay_day = db.Column(db.String(100), nullable=False)
+    start_date = db.Column(db.String(100), nullable=False)
+    end_date = db.Column(db.String(100), nullable=False)
+    employee_name = db.Column(db.String(100), nullable=False)
+    employee_id = db.Column(db.String(100), nullable=False)
+
+    # attendance
+    normal = db.Column(db.Integer)
+    reg_hol = db.Column(db.Integer)
+    no_sp_hol = db.Column(db.Integer)
+    wk_sp_hol = db.Column(db.Integer)
+    rd = db.Column(db.Integer)
+    equiv_wd = db.Column(db.Float(precision=2))
+
+    # pay
+    basic = db.Column(db.Float(precision=2))
+    allowance1 = db.Column(db.Float(precision=2))
+    allowance2 = db.Column(db.Float(precision=2))
+    allowance3 = db.Column(db.Float(precision=2))
+    pay_adj = db.Column(db.Float(precision=2))
+    pay_adj_reason = db.Column(db.String(250))
+
+    # deduction
+    cash_adv = db.Column(db.Float(precision=2))
+    ca_date = db.Column(db.String(100))
+    ca_deduction = db.Column(db.Float(precision=2))
+    ca_remaining = db.Column(db.Float(precision=2))
+    sss = db.Column(db.Float(precision=2))
+    philhealth = db.Column(db.Float(precision=2))
+    pag_ibig = db.Column(db.Float(precision=2))
+    life_insurance = db.Column(db.Float(precision=2))
+    income_tax = db.Column(db.Float(precision=2))
+
+    # summary
+    total_pay = db.Column(db.Float(precision=2))
+    total_deduct = db.Column(db.Float(precision=2))
+    net_pay = db.Column(db.Float(precision=2))
+    transferred_amt1 = db.Column(db.Float(precision=2))
+    transferred_amt2 = db.Column(db.Float(precision=2))
+    carry_over_next_month = db.Column(db.Float(precision=2))
+    carry_over_past_month = db.Column(db.Float(precision=2))
+
+
+class EmployeeProfileTable(UserMixin, db.Model):
+    __tablename__ = "employee"
+    id = db.Column(db.Integer, primary_key=True)
+
+    # personal info
+    first_name = db.Column(db.String(100), nullable=False)
+    middle_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    extn_name = db.Column(db.String(100), nullable=False)
+    birthday = db.Column(db.String(100), nullable=False)
+    gender = db.Column(db.String(100), nullable=False)
+
+    # address
+    house_no = db.Column(db.Integer())
+    lot_no = db.Column(db.Integer())
+    block_no = db.Column(db.String(100))
+    sub_division = db.Column(db.String(100))
+    purok = db.Column(db.String(100))
+    brgy = db.Column(db.String(100))
+    district = db.Column(db.String(100))
+    city = db.Column(db.String(100))
+    province = db.Column(db.String(100))
+    zip_code = db.Column(db.String(100))
+
+    # CompanyInfo
+    employee_id = db.Column(db.String(100))
+    date_hired = db.Column(db.String(100))
+    date_resigned = db.Column(db.String(100))
+    employment_status = db.Column(db.String(100))
+    position = db.Column(db.String(100))
+    rank = db.Column(db.String(100))
+
+    # Benefits
+    sss_no = db.Column(db.String(100))
+    philhealth_no = db.Column(db.String(100))
+    pag_ibig_no = db.Column(db.String(100))
+    # benefits premiums
+    sss_prem = db.Column(db.Float(precision=2))
+    philhealth_prem = db.Column(db.Float(precision=2))
+    pag_ibig_prem = db.Column(db.Float(precision=2))
+    # deductions
+    cash_adv = db.Column(db.Float(precision=2))
+    ca_date = db.Column(db.String(100))
+    ca_deduction = db.Column(db.Float(precision=2))
+    ca_remaining = db.Column(db.Float(precision=2))
+
+    # Compensation
+    basic = db.Column(db.Float(precision=2))
+    allowance1 = db.Column(db.Float(precision=2))
+    allowance2 = db.Column(db.Float(precision=2))
+    allowance3 = db.Column(db.Float(precision=2))
+
+
+# Run only once
+# db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -147,6 +323,8 @@ def dispatch():
 @login_required
 def input_dispatch():
     form = DispatchForm()
+    form.driver.choices = [(g.first_name, g.first_name) for g in EmployeeProfileTable.query.order_by("first_name")]
+    form.courier.choices = [(g.first_name, g.first_name) for g in EmployeeProfileTable.query.order_by("first_name")]
     if form.validate_on_submit():
         # Add new dispatch to database
         new_dispatch = DispatchTable(
@@ -197,9 +375,10 @@ def edit_dispatch(dispatch_id):
         drops=dispatch_to_edit.drops,
         rate=dispatch_to_edit.rate,
         plate_no=dispatch_to_edit.plate_no,
-        driver=dispatch_to_edit.driver,
-        courier=dispatch_to_edit.courier,
     )
+    edit_form.driver.choices = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
+    edit_form.courier.choices = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
+
     # load back edited form data to db
     if edit_form.validate_on_submit():
         dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data.strftime("%Y-%m-%d-%a")
@@ -398,26 +577,49 @@ def employee_add():
     if form.validate_on_submit():
         new_employee = EmployeeProfileTable(
             # personal info
-            first_name=form.first_name.data,
-            middle_name=form.middle_name.data,
-            last_name=form.last_name.data,
-            extn_name=form.extn_name.data,
+            first_name=form.first_name.data.title(),
+            middle_name=form.middle_name.data.title(),
+            last_name=form.last_name.data.title(),
+            extn_name=form.extn_name.data.title(),
             birthday=form.birthday.data.strftime("%Y-%m-%d-%a"),
-            gender=form.gender.data,
+            gender=form.gender.data.title(),
             # address
             house_no=form.house_no.data,
             lot_no=form.lot_no.data,
             block_no=form.block_no.data,
-            sub_division=form.sub_division.data,
-            purok=form.purok.data,
-            brgy=form.brgy.data,
-            district=form.district.data,
-            city=form.city.data,
-            province=form.province.data,
-            zip_code=form.zip_code.data,
-            company_related_info=CompanyRelatedInfoTable(),
-            benefits=BenefitsTable(),
-            compensation=CompensationTable()
+            sub_division=form.sub_division.data.title(),
+            purok=form.purok.data.title(),
+            brgy=form.brgy.data.title(),
+            district=form.district.data.title(),
+            city=form.city.data.title(),
+            province=form.province.data.title(),
+            zip_code=form.zip_code.data.upper(),
+            # CompanyInfo
+            employee_id="?",
+            date_hired=date.today().strftime("%Y-%m-%d-%a"),
+            date_resigned="?",
+            employment_status="?",
+            position="?",
+            rank="?",
+            # Benefits
+            sss_no="?",
+            philhealth_no="?",
+            pag_ibig_no="?",
+            # benefits premiums
+            sss_prem=0,
+            philhealth_prem=0,
+            pag_ibig_prem=0,
+            # deductions
+            cash_adv=0,
+            ca_date="?",
+            ca_deduction=0,
+            ca_remaining=0,
+            # Compensation
+            basic=0,
+            allowance1=0,
+            allowance2=0,
+            allowance3=0,
+
         )
         db.session.add(new_employee)
         db.session.commit()
@@ -450,22 +652,22 @@ def employee_edit(employee_index):
     )
     # reload edited form to db
     if edit_form.validate_on_submit():
-        employee_to_edit.first_name = edit_form.first_name.data
-        employee_to_edit.middle_name = edit_form.middle_name.data
-        employee_to_edit.last_name = edit_form.last_name.data
-        employee_to_edit.extn_name = edit_form.extn_name.data
+        employee_to_edit.first_name = edit_form.first_name.data.title()
+        employee_to_edit.middle_name = edit_form.middle_name.data.title()
+        employee_to_edit.last_name = edit_form.last_name.data.title()
+        employee_to_edit.extn_name = edit_form.extn_name.data.title()
         employee_to_edit.birthday = edit_form.birthday.data.strftime("%Y-%m-%d-%a")
-        employee_to_edit.gender = edit_form.gender.data
+        employee_to_edit.gender = edit_form.gender.data.title()
         employee_to_edit.house_no = edit_form.house_no.data
         employee_to_edit.lot_no = edit_form.lot_no.data
         employee_to_edit.block_no = edit_form.block_no.data
-        employee_to_edit.sub_division = edit_form.sub_division.data
-        employee_to_edit.purok = edit_form.purok.data
-        employee_to_edit.brgy = edit_form.brgy.data
-        employee_to_edit.district = edit_form.district.data
-        employee_to_edit.city = edit_form.city.data
-        employee_to_edit.province = edit_form.province.data
-        employee_to_edit.zip_code = edit_form.zip_code.data
+        employee_to_edit.sub_division = edit_form.sub_division.data.title()
+        employee_to_edit.purok = edit_form.purok.data.title()
+        employee_to_edit.brgy = edit_form.brgy.data.title()
+        employee_to_edit.district = edit_form.district.data.title()
+        employee_to_edit.city = edit_form.city.data.title()
+        employee_to_edit.province = edit_form.province.data.title()
+        employee_to_edit.zip_code = edit_form.zip_code.data.upper()
         db.session.commit()
         return redirect(url_for("employees"))
     return render_template("employees_input.html", form=edit_form)
@@ -476,44 +678,48 @@ def employee_admin_edit(employee_index):
     employee_to_edit = EmployeeProfileTable.query.get(employee_index)
     # pre-load form
     edit_form = EmployeeAdminEditForm(
-        employee_id=employee_to_edit.company_related_info.employee_id,
-        date_hired=employee_to_edit.company_related_info.date_hired,
-        date_resigned=employee_to_edit.company_related_info.date_resigned,
-        employment_status=employee_to_edit.company_related_info.employment_status,
-        position=employee_to_edit.company_related_info.position,
-        rank=employee_to_edit.company_related_info.rank,
-        sss_no=employee_to_edit.benefits.sss_no,
-        philhealth_no=employee_to_edit.benefits.philhealth_no,
-        pag_ibig_no=employee_to_edit.benefits.pag_ibig_no,
-        sss_prem=employee_to_edit.benefits.sss_prem,
-        philhealth_prem=employee_to_edit.benefits.philhealth_prem,
-        pag_ibig_prem=employee_to_edit.benefits.pag_ibig_prem,
-        basic=employee_to_edit.compensation.basic,
-        allowance1=employee_to_edit.compensation.allowance1,
-        allowance2=employee_to_edit.compensation.allowance2,
-        allowance3=employee_to_edit.compensation.allowance3
+        employee_id=employee_to_edit.employee_id,
+        date_hired=datetime.strptime(employee_to_edit.date_hired, "%Y-%m-%d-%a"),
+        employment_status=employee_to_edit.employment_status,
+        position=employee_to_edit.position,
+        rank=employee_to_edit.rank,
+        sss_no=employee_to_edit.sss_no,
+        philhealth_no=employee_to_edit.philhealth_no,
+        pag_ibig_no=employee_to_edit.pag_ibig_no,
+        sss_prem=employee_to_edit.sss_prem,
+        philhealth_prem=employee_to_edit.philhealth_prem,
+        pag_ibig_prem=employee_to_edit.pag_ibig_prem,
+        basic=employee_to_edit.basic,
+        allowance1=employee_to_edit.allowance1,
+        allowance2=employee_to_edit.allowance2,
+        allowance3=employee_to_edit.allowance3
     )
     if edit_form.validate_on_submit():
-        employee_to_edit.company_related_info.employee_id = edit_form.employee_id.data
-        employee_to_edit.company_related_info.date_hired = edit_form.date_hired.data
-        employee_to_edit.company_related_info.date_resigned = edit_form.date_resigned.data
-        employee_to_edit.company_related_info.employment_status = edit_form.employment_status.data
-        employee_to_edit.company_related_info.position = edit_form.position.data
-        employee_to_edit.company_related_info.rank = edit_form.rank.data
-        employee_to_edit.benefits.sss_no = edit_form.sss_no.data
-        employee_to_edit.benefits.philhealth_no = edit_form.philhealth_no.data
-        employee_to_edit.pag_ibig_no = edit_form.pag_ibig_no.data
-        employee_to_edit.benefits.sss_prem = edit_form.sss_prem.data
-        employee_to_edit.benefits.philhealth_prem = edit_form.philhealth_prem.data
-        employee_to_edit.benefits.pag_ibig_prem = edit_form.pag_ibig_prem.data
-        employee_to_edit.compensation.basic = edit_form.basic.data
-        employee_to_edit.compensation.allowance1 = edit_form.allowance1.data
-        employee_to_edit.compensation.allowance2 = edit_form.allowance2.data
-        employee_to_edit.compensation.allowance3 = edit_form.allowance3.data
+        employee_to_edit.employee_id = edit_form.employee_id.data.upper()
+        employee_to_edit.date_hired = edit_form.date_hired.data.strftime("%Y-%m-%d-%a")
+        employee_to_edit.employment_status = edit_form.employment_status.data.upper()
+        employee_to_edit.position = edit_form.position.data.upper()
+        employee_to_edit.rank = edit_form.rank.data.upper()
+        employee_to_edit.sss_no = edit_form.sss_no.data.upper()
+        employee_to_edit.philhealth_no = edit_form.philhealth_no.data.upper()
+        employee_to_edit.pag_ibig_no = edit_form.pag_ibig_no.data.upper()
+        employee_to_edit.sss_prem = edit_form.sss_prem.data
+        employee_to_edit.philhealth_prem = edit_form.philhealth_prem.data
+        employee_to_edit.pag_ibig_prem = edit_form.pag_ibig_prem.data
+        employee_to_edit.basic = edit_form.basic.data
+        employee_to_edit.allowance1 = edit_form.allowance1.data
+        employee_to_edit.allowance2 = edit_form.allowance2.data
+        employee_to_edit.allowance3 = edit_form.allowance3.data
+        print(edit_form.employment_status.data)
+        if edit_form.employment_status.data == "Resigned":
+            employee_to_edit.date_resigned = date.today().strftime("%Y-%m-%d-%a")
+        else:
+            employee_to_edit.date_resigned = ""
+
         db.session.commit()
         return redirect(url_for("employees"))
+    # todo 2. Econnect ang employees name and ID database sa dispatach entry
     return render_template("employees_input.html", form=edit_form)
-
 
 
 @app.route("/employee_delete/<int:employee_index>", methods=["Get", "Post"])
@@ -537,7 +743,7 @@ def payroll():
                      'driver', 'courier', 'pay_day'
                      ],
         )
-      
+
         sum_df1 = df.groupby(['wd_code', 'driver']).aggregate({'slip_no': 'count'}).unstack()
         sum_df2 = df.groupby(['wd_code', 'courier']).aggregate({'slip_no': 'count'}).unstack()
         sum_df = pd.concat([sum_df1, sum_df2], axis=1).to_html(
@@ -548,21 +754,9 @@ def payroll():
             classes="table table-striped table-hover table-bordered table-sm"
         )
 
-
-    # todo 3. update dispatch and paystrip tables on click
-
     return render_template("payroll.html", df=df, sum_df=sum_df)
-
-
-
-
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
     app.run(debug=True)
+
