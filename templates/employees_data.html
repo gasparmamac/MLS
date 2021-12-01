@@ -14,7 +14,8 @@
                 <thead>
                 <tr>
 <!--                    personal info-->
-                    <th scope="col">Name</th>
+                    <th scope="col">Full Name</th>
+                    <th scope="col">First Name</th>
                     <th scope="col">Middle Name</th>
                     <th scope="col">Last Name</th>
                     <th scope="col">Name Extension</th>
@@ -100,7 +101,7 @@
                     <td>{{ row[35] }}</td>
                     <td>{{ row[36] }}</td>
                     <td>{{ row[37] }}</td>
-
+                    <td>{{ row[38] }}</td>
                 <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">Edit</a></td>
                 <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">Delete</a></td>
                 <td><a href="{{ url_for('employee_admin_edit', employee_index=row[1]) }}">Admin Edit</a></td>

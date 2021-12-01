@@ -152,6 +152,7 @@ class EmployeeProfileTable(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
 
     # personal info
+    full_name = db.Column(db.String(100))
     first_name = db.Column(db.String(100), nullable=False)
     middle_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
@@ -160,6 +161,7 @@ class EmployeeProfileTable(UserMixin, db.Model):
     gender = db.Column(db.String(100), nullable=False)
 
     # address
+    address = db.Column(db.String(100))
     house_no = db.Column(db.Integer())
     lot_no = db.Column(db.Integer())
     block_no = db.Column(db.String(100))
@@ -376,8 +378,12 @@ def edit_dispatch(dispatch_id):
         rate=dispatch_to_edit.rate,
         plate_no=dispatch_to_edit.plate_no,
     )
-    edit_form.driver.choices = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
-    edit_form.courier.choices = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
+    # choices for select field
+    choices = ["?"]
+    a = [g.first_name for g in EmployeeProfileTable.query.order_by("first_name")]
+    choices += a
+    edit_form.driver.choices = choices
+    edit_form.courier.choices = choices
 
     # load back edited form data to db
     if edit_form.validate_on_submit():
@@ -583,6 +589,7 @@ def employee_add():
             extn_name=form.extn_name.data.title(),
             birthday=form.birthday.data.strftime("%Y-%m-%d-%a"),
             gender=form.gender.data.title(),
+            full_name=f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()}",
             # address
             house_no=form.house_no.data,
             lot_no=form.lot_no.data,
@@ -656,6 +663,7 @@ def employee_edit(employee_index):
         employee_to_edit.middle_name = edit_form.middle_name.data.title()
         employee_to_edit.last_name = edit_form.last_name.data.title()
         employee_to_edit.extn_name = edit_form.extn_name.data.title()
+        employee_to_edit.full_name = f"{edit_form.first_name.data.title()} {edit_form.middle_name.data[0].title()}. {edit_form.last_name.data.title()} {edit_form.extn_name.data.title()}"
         employee_to_edit.birthday = edit_form.birthday.data.strftime("%Y-%m-%d-%a")
         employee_to_edit.gender = edit_form.gender.data.title()
         employee_to_edit.house_no = edit_form.house_no.data
