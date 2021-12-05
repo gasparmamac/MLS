@@ -117,3 +117,4 @@ def create_pay_strip(main_df, grouped_df):
         db.session.add(new_pay_strip)
         db.session.commit()
 
+

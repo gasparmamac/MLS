@@ -51,13 +51,15 @@ class DispatchTable(UserMixin, db.Model):
     slip_no = db.Column(db.String(100), nullable=False)
     route = db.Column(db.String(100), nullable=False)
     area = db.Column(db.String(250))
+    destination = db.Column(db.String(100))
     odo_start = db.Column(db.Integer)
     odo_end = db.Column(db.Integer)
     km = db.Column(db.Float(precision=1))
     cbm = db.Column(db.String(100), nullable=False)
     qty = db.Column(db.String(100), nullable=False)
     drops = db.Column(db.String(100), nullable=False)
-    rate = db.Column(db.String(100), nullable=False)
+    std_rate = db.Column(db.Float(precision=1), nullable=False)
+    rate = db.Column(db.Float(precision=1), nullable=False)
     plate_no = db.Column(db.String(100), nullable=False)
     driver = db.Column(db.String(100), nullable=False)
     courier = db.Column(db.String(100), nullable=False)
@@ -146,13 +148,15 @@ class PayStripTable(UserMixin, db.Model):
     carry_over_next_month = db.Column(db.Float(precision=2))
     carry_over_past_month = db.Column(db.Float(precision=2))
 
+    encoded_on = db.Column(db.String(100))
+    encoded_by = db.Column(db.String(100))
+
 
 class EmployeeProfileTable(UserMixin, db.Model):
     __tablename__ = "employee"
     id = db.Column(db.Integer, primary_key=True)
 
     # personal info
-    full_name = db.Column(db.String(100))
     first_name = db.Column(db.String(100), nullable=False)
     middle_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
@@ -191,6 +195,28 @@ class EmployeeProfileTable(UserMixin, db.Model):
     allowance2 = db.Column(db.Float(precision=2))
     allowance3 = db.Column(db.Float(precision=2))
 
+    encoded_on = db.Column(db.String(100))
+    encoded_by = db.Column(db.String(100))
+
+
+class Tariff(db.Model, UserMixin):
+    __tablename__ = 'tariff'
+    id = db.Column(db.Integer, primary_key=True)
+    route = db.Column(db.String, nullable=True)
+    area = db.Column(db.String(100), nullable=True)
+    km = db.Column(db.Float(precision=1))
+    vehicle = db.Column(db.String(100))
+    cbm = db.Column(db.Float(precision=1))
+    rate = db.Column(db.Float(precision=1))
+    update = db.Column(db.String(50))
+    encoded_on = db.Column(db.String(50))
+    encoded_by = db.Column(db.String(10))
+
+
+
+
+
+
 
 # Run only once
 db.create_all()
@@ -217,9 +243,10 @@ def admin_only(f):
     return decorated_function
 
 
-# --------------------------------------------------Login-logout-------------------------------------------------------
+# Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
+
     return render_template("_index.html")
 
 
@@ -283,7 +310,7 @@ def logout():
     return redirect(url_for("home"))
 
 
-# -------------------------------------------------Dispatch table---------------------------------------------------
+# Dispatch table--------------------------------------------------------
 @app.route("/dispatch_report", methods=["Get", "Post"])
 # @fresh_login_required
 # @admin_only
@@ -315,16 +342,23 @@ def dispatch():
 @login_required
 def input_dispatch():
     form = DispatchForm()
-    form.driver.choices = [(g.full_name, g.full_name) for g in EmployeeProfileTable.query.order_by("full_name")]
-    form.courier.choices = [(g.full_name, g.full_name) for g in EmployeeProfileTable.query.order_by("full_name")]
+    form.driver.choices = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in
+                           EmployeeProfileTable.query.order_by("last_name")]
+    form.courier.choices = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in
+                            EmployeeProfileTable.query.order_by("last_name")]
+    form.area.choices = [a.area for a in Tariff.query.order_by("area")]
+
     if form.validate_on_submit():
+        # todo: route function
+        # todo: std rate function
         # Add new dispatch to database
         new_dispatch = DispatchTable(
             dispatch_date=form.dispatch_date.data.strftime("%Y-%m-%d-%a"),
             wd_code=form.wd_code.data,
             slip_no=form.slip_no.data,
-            route=form.route.data.title(),
+            route="?",
             area=form.area.data.title(),
+            destination=form.destination.data.title(),
             odo_start=form.odo_start.data,
             odo_end=form.odo_end.data,
             km=form.odo_end.data - form.odo_start.data,
@@ -332,6 +366,7 @@ def input_dispatch():
             qty=form.qty.data,
             drops=form.drops.data,
             rate=form.rate.data,
+            std_rate=0,
             plate_no=form.plate_no.data.upper(),
             driver=form.driver.data.title(),
             courier=form.courier.data.title(),
@@ -360,28 +395,40 @@ def edit_dispatch(dispatch_id):
         slip_no=dispatch_to_edit.slip_no,
         route=dispatch_to_edit.route,
         area=dispatch_to_edit.area,
+        destination=dispatch_to_edit.destination,
         odo_start=dispatch_to_edit.odo_start,
         odo_end=dispatch_to_edit.odo_end,
         cbm=dispatch_to_edit.cbm,
         qty=dispatch_to_edit.qty,
         drops=dispatch_to_edit.drops,
         rate=dispatch_to_edit.rate,
+        std_rate=0,
         plate_no=dispatch_to_edit.plate_no,
     )
     # choices for select field
-    choices = ["?"]
-    a = [g.full_name for g in EmployeeProfileTable.query.order_by("full_name")]
-    choices += a
-    edit_form.driver.choices = choices
-    edit_form.courier.choices = choices
+    choices1 = ["?"]
+    choices2 = ["?"]
+
+    a = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in EmployeeProfileTable.query.order_by("last_name")]
+    b = [a.area for a in Tariff.query.order_by("area")]
+
+    choices1 += a
+    choices2 += b
+
+    edit_form.driver.choices = choices1
+    edit_form.courier.choices = choices1
+    edit_form.area.choices = choices2
+
+    route = "?"
 
     # load back edited form data to db
     if edit_form.validate_on_submit():
         dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data.strftime("%Y-%m-%d-%a")
         dispatch_to_edit.wd_code = edit_form.wd_code.data
         dispatch_to_edit.slip_no = edit_form.slip_no.data
-        dispatch_to_edit.route = edit_form.route.data.title()
+        dispatch_to_edit.route = route
         dispatch_to_edit.area = edit_form.area.data.title()
+        dispatch_to_edit.destination = edit_form.destination.data.title()
         dispatch_to_edit.odo_start = edit_form.odo_start.data
         dispatch_to_edit.odo_end = edit_form.odo_end.data
         dispatch_to_edit.km = edit_form.odo_end.data - edit_form.odo_start.data
@@ -407,7 +454,7 @@ def delete_dispatch(dispatch_id):
     return redirect(url_for("dispatch"))
 
 
-# ------------------------------------------------Maintenance expenses table------------------------------------------
+# Maintenance expenses table---------------------------------------------
 @app.route("/maintenance", methods=["Get", "Post"])
 def maintenance():
     form = MaintenanceFilterForm()
@@ -485,7 +532,7 @@ def delete_maintenance(maintenance_id):
     return redirect(url_for('maintenance'))
 
 
-# -------------------------------------------------Admin expenses----------------------------------------------------
+# Admin expenses--------------------------------------------------------
 @app.route("/admin", methods=["Get", "Post"])
 def admin():
     form = AdminFilterForm()
@@ -558,7 +605,7 @@ def delete_admin(admin_id):
     return redirect(url_for('admin'))
 
 
-# ---------------------------------------------------------Employee---------------------------------------------------
+# Employee-------------------------------------------------------------
 @app.route("/employee_list", methods=["Get", "Post"])
 def employees():
     # Get all employees data from database
@@ -580,7 +627,6 @@ def employee_add():
             extn_name=form.extn_name.data.title(),
             birthday=form.birthday.data.strftime("%Y-%m-%d-%a"),
             gender=form.gender.data.title(),
-            full_name=f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()}",
             # address
             address=form.address.data.title(),
             # CompanyInfo
@@ -636,7 +682,6 @@ def employee_edit(employee_index):
         employee_to_edit.middle_name = edit_form.middle_name.data.title()
         employee_to_edit.last_name = edit_form.last_name.data.title()
         employee_to_edit.extn_name = edit_form.extn_name.data.title()
-        employee_to_edit.full_name = f"{edit_form.first_name.data.title()} {edit_form.middle_name.data[0].title()}. {edit_form.last_name.data.title()} {edit_form.extn_name.data.title()}"
         employee_to_edit.birthday = edit_form.birthday.data.strftime("%Y-%m-%d-%a")
         employee_to_edit.gender = edit_form.gender.data.title()
         employee_to_edit.address = edit_form.address.data.title()
@@ -690,7 +735,6 @@ def employee_admin_edit(employee_index):
 
         db.session.commit()
         return redirect(url_for("employees"))
-    # todo 2. Econnect ang employees name and ID database sa dispatach entry
     return render_template("employees_input.html", form=edit_form)
 
 
@@ -703,7 +747,7 @@ def employee_delete(employee_index):
     pass
 
 
-# ---------------------------------------------------------Payroll----------------------------------------------------
+# Payroll---------------------------------------------------------------
 @app.route("/payroll", methods=["Get", "Post"])
 def payroll():
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
@@ -727,6 +771,78 @@ def payroll():
         )
 
     return render_template("payroll.html", df=df, sum_df=sum_df)
+
+
+# tariff-----------------------------------------------------------------------------
+@app.route("/tariff", methods=["Get", "Post"])
+def tariff():
+    # get tariff data from database
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="tariff", con=cnx)
+    return render_template("tariff_data.html", df=df)
+
+
+@app.route("/add_tariff", methods=["Get", "Post"])
+def add_tariff():
+    form = TariffForm()
+
+    # get tariff data from database
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="tariff", con=cnx)
+
+    if form.validate_on_submit():
+        new_tariff = Tariff(
+            route=form.route.data.title(),
+            area=form.area.data.title(),
+            km=form.km.data,
+            vehicle=form.vehicle.data.title(),
+            cbm=form.cbm.data,
+            rate=form.rate.data,
+            update=form.update.data.strftime("%B %Y"),
+            encoded_on=date.today().strftime("%Y-%m-%d-%a"),
+            encoded_by=f"{current_user.first_name} {current_user.middle_name[0]}. {current_user.last_name}"
+        )
+        db.session.add(new_tariff)
+        db.session.commit()
+        return redirect(url_for('tariff'))
+    return render_template('tariff_input.html', form=form, df=df)
+
+
+@app.route("/edit_tariff/<int:tariff_id>", methods=["Get", "Post"])
+def edit_tariff(tariff_id):
+    tariff_to_edit = Tariff.query.get(tariff_id)
+
+    # pre-load form
+    edit_form = TariffForm(
+        route=tariff_to_edit.route,
+        area=tariff_to_edit.area,
+        km=tariff_to_edit.km,
+        vehicle=tariff_to_edit.vehicle,
+        cbm=tariff_to_edit.cbm,
+        rate=tariff_to_edit.rate,
+        update=datetime.strptime(tariff_to_edit.update, "%B %Y")
+    )
+    if edit_form.validate_on_submit():
+        tariff_to_edit.route = edit_form.route.data.title()
+        tariff_to_edit.area = edit_form.area.data.title()
+        tariff_to_edit.km = edit_form.km.data
+        tariff_to_edit.vehicle = edit_form.vehicle.data.title()
+        tariff_to_edit.cbm = edit_form.cbm.data
+        tariff_to_edit.rate = edit_form.rate.data
+        tariff_to_edit.update = edit_form.update.data.strftime("%B %Y")
+        tariff_to_edit.encoded_on = str(date.today().strftime("%Y-%m-%d-%a"))
+        tariff_to_edit.encoded_by = f"{current_user.first_name} {current_user.middle_name[0]}. {current_user.last_name}"
+        db.session.commit()
+        return redirect(url_for('tariff'))
+    return render_template("tariff_input.html", form=edit_form)
+
+
+@app.route("/delete_tariff/<int:tariff_id>", methods=["Get", "Post"])
+def delete_tariff(tariff_id):
+    tariff_to_delete = Tariff.query.get(tariff_id)
+    db.session.delete(tariff_to_delete)
+    db.session.commit()
+    return redirect(url_for("tariff"))
 
 
 if __name__ == "__main__":

@@ -32,17 +32,8 @@ class DispatchForm(FlaskForm):
         ("rd", "Rest day")
     ])
     slip_no = StringField("Slip no", validators=[DataRequired()])
-    route = SelectField("Route", choices=[
-        "Davao City",
-        "CDO via Buda",
-        "GenSan",
-        "Malita",
-        "Cotabato",
-        "Asuncion",
-        "Mati",
-        "CDO via Butuan"
-    ])
-    area = StringField("Area", validators=[DataRequired()])
+    area = SelectField("Area")
+    destination = StringField("Destination", validators=[DataRequired()])
     odo_start = IntegerField("Odo start (Km)")
     odo_end = IntegerField("Odo end (Km)")
     cbm = FloatField("Cbm", validators=[DataRequired()])
@@ -123,6 +114,7 @@ class EmployeeAdminEditForm(FlaskForm):
     employee_id = StringField("ID")
     date_hired = DateField("Date hired")
     employment_status = SelectField(
+        "Status",
         choices=["Contractual", "Provisional", "Regular", "Awol", "Resigned"]
     )
     position = StringField("Position")
@@ -171,8 +163,22 @@ class PayStripForm(FlaskForm):
     income_tax = FloatField("Income tax")
     # summary
     total_pay = FloatField("Gross pay")
+    submit = SubmitField("Submit")
 
 
+class TariffForm(FlaskForm):
+    route = SelectField(
+        'Route',
+        choices=['Davao City', 'Gensan', 'Malita', 'Cotabato', 'Asuncion', 'Mati', 'CDO via Buda', 'CDO via Butuan'])
+    area = StringField('Area')
+    km = FloatField('Km')
+    vehicle = StringField('Vehicle type')
+    cbm = SelectField(
+        'Cbm',
+        choices=[3, 5, 8, 15, 25])
+    rate = FloatField('Rate')
+    update = DateField('LBC tariff released date')
+    submit = SubmitField("Submit")
 
 
 
