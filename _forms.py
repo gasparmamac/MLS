@@ -19,6 +19,7 @@ class RegisterForm(FlaskForm):
     first_name = StringField("First name", validators=[DataRequired()])
     middle_name = StringField("Middle name", validators=[DataRequired()])
     last_name = StringField("Last Name", validators=[DataRequired()])
+    extn_name = StringField("Extn name. (ex. Jr, Sr. III)")
     submit = SubmitField("Register")
 
 
@@ -39,7 +40,7 @@ class DispatchForm(FlaskForm):
     cbm = FloatField("Cbm", validators=[DataRequired()])
     qty = IntegerField("Qty", validators=[DataRequired()])
     drops = IntegerField("Drops", validators=[DataRequired()])
-    rate = FloatField("Rate", validators=[DataRequired()])
+    rate = FloatField("Charge Rate", validators=[DataRequired()])
     plate_no = StringField("Plate no", validators=[DataRequired()])
     # driver = StringField("Driver", validators=[DataRequired()])
     driver = SelectField(u"Driver")
@@ -106,6 +107,8 @@ class EmployeeEntryForm(FlaskForm):
     gender = StringField("Gender", validators=[DataRequired()])
     # address
     address = TextAreaField("Address", validators=[DataRequired()])
+    contact_no = StringField("Cellphone no.", validators=[DataRequired()])
+    facebook = StringField("Facebook account")
     submit = SubmitField("Add Employee")
 
 
@@ -179,6 +182,16 @@ class TariffForm(FlaskForm):
     rate = FloatField('Rate')
     update = DateField('LBC tariff released date')
     submit = SubmitField("Submit")
+
+
+class CashAdvForm(FlaskForm):
+    name = SelectField("Name")
+    date = DateField("C.A. Date")
+    amount = FloatField("Amount")
+    deduction = FloatField("Deduction")
+
+
+
 
 
 

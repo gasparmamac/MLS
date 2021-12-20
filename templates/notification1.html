@@ -1,0 +1,11 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block title%}not found{% endblock %}
+
+{% block content%}
+
+    {% include '_header.html' %}
+        <h3 class="center">No unforwarded dispatch found</h3>
+        <a href="{{ url_for('dispatch') }}">Go to dispatch</a>
+    {% include '_footer.html' %}
+{% endblock%}

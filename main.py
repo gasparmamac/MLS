@@ -8,6 +8,7 @@ from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
 
 from _forms import *
+from _util import *
 
 from datetime import datetime, date
 from sqlalchemy import create_engine
@@ -38,6 +39,8 @@ class UserTable(UserMixin, db.Model):
     first_name = db.Column(db.String(100))
     middle_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100))
+    extn_name = db.Column(db.String(100))
+    full_name = db.Column(db.String(100))
     dispatch = relationship("DispatchTable", back_populates="encoder")
     admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
     maintenance = relationship("MaintenanceTable", back_populates="encoder")
@@ -148,8 +151,8 @@ class PayStripTable(UserMixin, db.Model):
     carry_over_next_month = db.Column(db.Float(precision=2))
     carry_over_past_month = db.Column(db.Float(precision=2))
 
-    encoded_on = db.Column(db.String(100))
-    encoded_by = db.Column(db.String(100))
+    paid_on = db.Column(db.String(100))
+    paid_by = db.Column(db.String(100))
 
 
 class EmployeeProfileTable(UserMixin, db.Model):
@@ -161,8 +164,12 @@ class EmployeeProfileTable(UserMixin, db.Model):
     middle_name = db.Column(db.String(100), nullable=False)
     last_name = db.Column(db.String(100), nullable=False)
     extn_name = db.Column(db.String(100), nullable=False)
+    full_name = db.Column(db.String(100), nullable=False)
     birthday = db.Column(db.String(100), nullable=False)
     gender = db.Column(db.String(100), nullable=False)
+    contact_no = db.Column(db.String(100), nullable=False)
+    facebook = db.Column(db.String(100))
+
 
     # address
     address = db.Column(db.String(100))
@@ -267,12 +274,21 @@ def register():
             method="pbkdf2:sha256",
             salt_length=8
         )
+
+        # full name construction
+        if form.extn_name.data == "":
+            full_name = f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()}"
+        else:
+            full_name = f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()} {form.extn_name.data.title()}"
+
         # Add new user to the database
         new_user = UserTable(
-            email=form.email.data,
-            first_name=form.first_name.data,
-            middle_name=form.middle_name.data,
-            last_name=form.last_name.data,
+            email=form.email.data.lower(),
+            first_name=form.first_name.data.title(),
+            middle_name=form.middle_name.data.title(),
+            last_name=form.last_name.data.title(),
+            extn_name=form.extn_name.data.title(),
+            full_name=full_name,
             password=hashed_and_salted_password
         )
         db.session.add(new_user)
@@ -323,7 +339,7 @@ def dispatch():
         df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
     # Dispatch data
-    sorted_df = df.head(n=20).sort_values("dispatch_date", ascending=False)
+    sorted_df = df.head(n=25).sort_values("dispatch_date", ascending=False)
 
     # SORTED DISPATCH DATA
     if form.validate_on_submit():
@@ -342,10 +358,8 @@ def dispatch():
 @login_required
 def input_dispatch():
     form = DispatchForm()
-    form.driver.choices = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in
-                           EmployeeProfileTable.query.order_by("last_name")]
-    form.courier.choices = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in
-                            EmployeeProfileTable.query.order_by("last_name")]
+    form.driver.choices = [g.full_name for g in EmployeeProfileTable.query.order_by("last_name")]
+    form.courier.choices = [g.full_name for g in EmployeeProfileTable.query.order_by("last_name")]
     form.area.choices = [a.area for a in Tariff.query.order_by("area")]
 
     if form.validate_on_submit():
@@ -409,7 +423,7 @@ def edit_dispatch(dispatch_id):
     choices1 = ["?"]
     choices2 = ["?"]
 
-    a = [f"{g.first_name} {g.middle_name[0]}. {g.last_name}" for g in EmployeeProfileTable.query.order_by("last_name")]
+    a = [g.full_name for g in EmployeeProfileTable.query.order_by("last_name")]
     b = [a.area for a in Tariff.query.order_by("area")]
 
     choices1 += a
@@ -619,16 +633,25 @@ def employee_add():
     form = EmployeeEntryForm()
     if form.validate_on_submit():
 
+        # full name construction
+        if form.extn_name.data == "":
+            full_name = f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()}"
+        else:
+            full_name = f"{form.first_name.data.title()} {form.middle_name.data[0].title()}. {form.last_name.data.title()} {form.extn_name.data.title()}"
+
         new_employee = EmployeeProfileTable(
             # personal info
             first_name=form.first_name.data.title(),
             middle_name=form.middle_name.data.title(),
             last_name=form.last_name.data.title(),
             extn_name=form.extn_name.data.title(),
+            full_name=full_name,
             birthday=form.birthday.data.strftime("%Y-%m-%d-%a"),
             gender=form.gender.data.title(),
             # address
             address=form.address.data.title(),
+            contact_no=form.contact_no.data,
+            facebook=form.facebook.data,
             # CompanyInfo
             employee_id="?",
             date_hired=date.today().strftime("%Y-%m-%d-%a"),
@@ -673,18 +696,30 @@ def employee_edit(employee_index):
         extn_name=employee_to_edit.extn_name,
         birthday=datetime.strptime(employee_to_edit.birthday, "%Y-%m-%d-%a"),
         gender=employee_to_edit.gender,
-        address=employee_to_edit.address
+        address=employee_to_edit.address,
+        contact_no=employee_to_edit.contact_no,
+        facebook=employee_to_edit.facebook
 
     )
     # reload edited form to db
     if edit_form.validate_on_submit():
+
+        # full name construction
+        if edit_form.extn_name.data == "":
+            full_name = f"{edit_form.first_name.data.title()} {edit_form.middle_name.data[0].title()}. {edit_form.last_name.data.title()}"
+        else:
+            full_name = f"{edit_form.first_name.data.title()} {edit_form.middle_name.data[0].title()}. {edit_form.last_name.data.title()} {edit_form.extn_name.data.title()}"
+
         employee_to_edit.first_name = edit_form.first_name.data.title()
         employee_to_edit.middle_name = edit_form.middle_name.data.title()
         employee_to_edit.last_name = edit_form.last_name.data.title()
         employee_to_edit.extn_name = edit_form.extn_name.data.title()
+        employee_to_edit.full_name = full_name
         employee_to_edit.birthday = edit_form.birthday.data.strftime("%Y-%m-%d-%a")
         employee_to_edit.gender = edit_form.gender.data.title()
         employee_to_edit.address = edit_form.address.data.title()
+        employee_to_edit.contact_no = edit_form.contact_no.data
+        employee_to_edit.facebook = edit_form.facebook.data
         db.session.commit()
         return redirect(url_for("employees"))
     return render_template("employees_input.html", form=edit_form)
@@ -727,7 +762,7 @@ def employee_admin_edit(employee_index):
         employee_to_edit.allowance1 = edit_form.allowance1.data
         employee_to_edit.allowance2 = edit_form.allowance2.data
         employee_to_edit.allowance3 = edit_form.allowance3.data
-        print(edit_form.employment_status.data)
+        # print(edit_form.employment_status.data)
         if edit_form.employment_status.data == "Resigned":
             employee_to_edit.date_resigned = date.today().strftime("%Y-%m-%d-%a")
         else:
@@ -748,29 +783,153 @@ def employee_delete(employee_index):
 
 
 # Payroll---------------------------------------------------------------
+# todo: payroll paystrip
 @app.route("/payroll", methods=["Get", "Post"])
 def payroll():
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
-        df = pd.read_sql_table(
+        raw = pd.read_sql_table(
             table_name="dispatch",
             con=cnx, index_col='dispatch_date',
             columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
-                     'route', 'area', 'cbm', 'qty', 'drops', 'plate_no',
+                     'area', 'destination', 'cbm', 'qty', 'drops', 'plate_no',
                      'driver', 'courier', 'pay_day'
                      ],
         )
+    # check for unpaid dispatch
+    unpaid_cnt = is_found(raw["pay_day"], "-")
+    if unpaid_cnt > 0:
+        paid = False
+        df = raw.groupby("pay_day").get_group("-").sort_values("dispatch_date", ascending=False)  # group of unpaid dispatches
 
-        sum_df1 = df.groupby(['wd_code', 'driver']).aggregate({'slip_no': 'count'}).unstack()
-        sum_df2 = df.groupby(['wd_code', 'courier']).aggregate({'slip_no': 'count'}).unstack()
-        sum_df = pd.concat([sum_df1, sum_df2], axis=1).to_html(
-            na_rep=0.0,
-            header=True,
-            index_names=False,
-            justify='match-parent',
-            classes="table table-striped table-hover table-bordered table-sm"
+    else:
+        paid = True
+        df = raw.head(n=25).sort_values("dispatch_date", ascending=False)
+
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
+        pay_strip_df = strip_df.head(n=25).sort_values("paid_on", ascending=False)
+
+    return render_template("payroll.html", unpaid_df=df, pay_strip_df=pay_strip_df, paid=paid, unpaid_cnt=unpaid_cnt)
+
+
+@app.route("/add_payroll", methods=["Get", "Post"])
+def add_payroll():
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        raw = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx, index_col='dispatch_date',
         )
+    unpaid_df = raw.groupby("pay_day").get_group("-")  # group of unpaid dispatches
+    df1 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["driver"], aggfunc="count")
+    df2 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["courier"], aggfunc="count")
+    df3 = pd.concat([df1, df2], axis=0).groupby(level=0).sum().fillna(0)
+    print(f"df3: {df3}")
+    # initialize code variable
+    normal = 0
+    reg_hol = 0
+    no_sp_hol = 0
+    wk_sp_hol = 0
+    rd = 0
 
-    return render_template("payroll.html", df=df, sum_df=sum_df)
+    # iterate each employee on the column label
+    for col in df3.columns:
+        emp = EmployeeProfileTable.query.filter_by(full_name=col).first()
+        for index in df3.index:
+            if index == "normal":
+                normal = df3.at[index, emp.full_name]
+            elif index == "reg_hol":
+                reg_hol = df3.at[index, emp.full_name]
+            elif index == "no_sp_hol":
+                no_sp_hol = df3.at[index, emp.full_name]
+            elif index == "wk_sp_hol":
+                wk_sp_hol = df3.at[index, emp.full_name]
+            elif index == "rd":
+                rd = df3.at[index, emp.full_name]
+
+        # attendance computation
+        equiv_wd = normal + (reg_hol * 2) + (no_sp_hol * 1.3) + (wk_sp_hol * 1) + (rd * 1.25)
+        total_pay = (equiv_wd * emp.basic) + emp.allowance1 + emp.allowance2 + emp.allowance3
+
+        # deduction (c.a remaining)
+        if not emp.ca_remaining == 0:
+            test = emp.ca_remaining - emp.ca_deduction
+            if test <= 0:
+                emp.ca_remaining = 0,
+                emp.ca_deduction = emp.ca_remaining
+                db.session.commit()
+        total_deduction = emp.ca_deduction + emp.sss_prem + emp.philhealth_prem + emp.pag_ibig_prem
+
+        # net pay
+        net_pay = total_pay - total_deduction
+
+        # money transfer and others
+        transferred_amt1 = net_pay
+        transferred_amt2 = 0
+        carry_over_next_month = 0
+        carry_over_past_month = 0
+
+        # update paystrip table
+        new_strip = PayStripTable(
+            pay_day="?",
+            start_date=unpaid_df.index.min(),
+            end_date=unpaid_df.index.max(),
+            employee_name=emp.full_name,
+            employee_id=emp.employee_id,
+            # attendance
+            normal=normal,
+            reg_hol=reg_hol,
+            no_sp_hol=no_sp_hol,
+            wk_sp_hol=wk_sp_hol,
+            rd=rd,
+            equiv_wd=equiv_wd,
+            # pay
+            basic=emp.basic,
+            allowance1=emp.allowance1,
+            allowance2=emp.allowance2,
+            allowance3=emp.allowance3,
+            pay_adj=0,
+            pay_adj_reason="?",
+            # deduction
+            cash_adv=emp.cash_adv,
+            ca_date=emp.ca_date,
+            ca_deduction=emp.ca_deduction,
+            ca_remaining=emp.ca_remaining,
+            sss=emp.sss_prem,
+            philhealth=emp.philhealth_prem,
+            pag_ibig=emp.pag_ibig_prem,
+            life_insurance=0,
+            income_tax=0,
+            # summary
+            total_pay=total_pay,
+            total_deduct=total_deduction,
+            net_pay=net_pay,
+            transferred_amt1=transferred_amt1,
+            transferred_amt2=transferred_amt2,
+            carry_over_next_month=carry_over_next_month,
+            carry_over_past_month=carry_over_past_month,
+            paid_on=datetime.today().strftime("%Y-%m-%d-%X"),
+            paid_by=current_user.full_name
+        )
+        db.session.add(new_strip)
+        db.session.commit()
+
+    # update un-forwarded df
+    indexes = [row[1] for row in unpaid_df.itertuples()]
+    for index in indexes:
+        disp = DispatchTable.query.get(index)
+        disp.pay_day = datetime.today().strftime("%Y-%m-%d-%X")
+        db.session.commit()
+    print(indexes)
+
+    return redirect(url_for('payroll'))
+
+
+@app.route("/delete_paystrip/<int:paystrip_id>", methods=["Get", "Post"])
+def delete_payroll(paystrip_id):
+    payroll_to_delete = PayStripTable.query.get(paystrip_id)
+    db.session.delete(payroll_to_delete)
+    db.session.commit()
+    return redirect(url_for("payroll"))
 
 
 # tariff-----------------------------------------------------------------------------
@@ -800,7 +959,7 @@ def add_tariff():
             rate=form.rate.data,
             update=form.update.data.strftime("%B %Y"),
             encoded_on=date.today().strftime("%Y-%m-%d-%a"),
-            encoded_by=f"{current_user.first_name} {current_user.middle_name[0]}. {current_user.last_name}"
+            encoded_by=current_user.full_name
         )
         db.session.add(new_tariff)
         db.session.commit()
@@ -831,7 +990,7 @@ def edit_tariff(tariff_id):
         tariff_to_edit.rate = edit_form.rate.data
         tariff_to_edit.update = edit_form.update.data.strftime("%B %Y")
         tariff_to_edit.encoded_on = str(date.today().strftime("%Y-%m-%d-%a"))
-        tariff_to_edit.encoded_by = f"{current_user.first_name} {current_user.middle_name[0]}. {current_user.last_name}"
+        tariff_to_edit.encoded_by = current_user.full_name
         db.session.commit()
         return redirect(url_for('tariff'))
     return render_template("tariff_input.html", form=edit_form)

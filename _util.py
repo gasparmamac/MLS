@@ -1,8 +1,91 @@
 from datetime import datetime
 
 import pandas as pd
+from flask_login import current_user
 from sqlalchemy import create_engine
-from main import PayStripTable, EmployeeProfileTable, db
+from main import EmployeeProfileTable, PayStripTable, db
+
+
+class PayStrip:
+    def __init__(self, employee, unpaid_df, grouped_df):
+        self.grouped_df = grouped_df
+        self.pay_day = "?"
+        self.start_date = unpaid_df.index.min()
+        self.end_date = unpaid_df.index.max()
+        self.employee = employee.full_name
+        self.employee_id = employee.id
+        # attendance
+        self.normal = 0
+        self.reg_hol = 0
+        self.no_sp_hol = 0
+        self.wk_sp_hol = 0
+        self.rd = 0
+        self.equiv_wd = 0
+        # pay
+        self.basic = employee.basic
+        self.allowance1 = employee.allowance1
+        self.allowance2 = employee.allowance2
+        self.allowance3 = employee.allowance3
+        self.pay_adj = 0
+        self.pay_adj_reason = "?"
+        # deduction
+        self.cash_adv = employee.cash_adv
+        self.ca_date = employee.ca_date
+        self.ca_deduction = employee.ca_deduction
+        self.ca_remaining = employee.ca_remaining
+        self.sss = employee.sss_prem
+        self.philhealth = employee.philhealth_prem
+        self.pag_ibig = employee.pag_ibig_prem
+        self.life_insurance = 0
+        self.income_tax = 0
+        self.total_pay = 0
+        self.total_deduction = 0
+        self.net_pay = 0
+        self.transferred_amt1 = 0
+        self.transferred_amt2 = 0
+        self.carry_over_next_month = 0
+        self.carry_over_past_month = 0
+
+        self.encoded_on = "?"
+        self.encoded_by = "?"
+        self.compute_total_pay()
+        self.compute_deduction()
+        self.compute_net_pay()
+
+    def compute_total_pay(self):
+        # iterate rows in each column
+        for col in self.grouped_df.columns:
+            for index in self.grouped_df.index:
+                if index == "normal":
+                    self.normal = self.grouped_df.loc[index, col]
+                elif index == "reg_hol":
+                    self.reg_hol = self.grouped_df.loc[index, col]
+                elif index == "no_sp_hol":
+                    self.no_sp_hol = self.grouped_df.loc[index, col]
+                elif index == "wk_sp_hol":
+                    self.wk_sp_hol = self.grouped_df.loc[index, col]
+                elif index == "rd":
+                    self.rd = self.grouped_df.loc[index, col]
+
+        # attendance computation
+        self.equiv_wd = self.normal + (self.reg_hol * 2) + (self.no_sp_hol * 1.3) + (self.wk_sp_hol * 1) + (self.rd * 1.25)
+        self.total_pay = (self.equiv_wd * self.basic) + self.allowance1 + self.allowance2 + self.allowance3
+        return self.total_pay
+
+    def compute_deduction(self):
+        # deduction (c.a remaining)
+        if not self.ca_remaining == 0:
+            self.ca_remaining -= self.ca_deduction
+            if self.ca_remaining <= 0:
+                self.ca_remaining = 0,
+                self.ca_deduction = self.ca_remaining
+        self.total_deduction = self.ca_deduction + self.sss + self.philhealth + self.pag_ibig + self.life_insurance + self.income_tax
+        return self.total_deduction
+
+    def compute_net_pay(self):
+        # summary
+        self.net_pay = self.total_pay - self.total_deduction
+        return self.net_pay
 
 
 def week_in_month(target_date):
@@ -12,109 +95,14 @@ def week_in_month(target_date):
     return num
 
 
-def create_pay_strip(main_df, grouped_df):
-
-    # iterate each column
-    for col in grouped_df.columns:
-
-        # unpack multi-column tuple
-        (a, first_name) = col
-
-        # query employee profile from data base
-        employee = EmployeeProfileTable.query.filter_by(first_name=first_name).first()
-
-        # extracting attendance
-        for index in grouped_df.index:
-            if index == "normal":
-                normal = grouped_df.loc[index, col]
-            elif index == "reg_hol":
-                reg_hol = grouped_df.loc[index, col]
-            elif index == "no_sp_hol":
-                no_sp_hol = grouped_df.loc[index, col]
-            elif index == "wk_sp_hol":
-                wk_sp_hol = grouped_df.loc[index, col]
-            elif index == "rd":
-                rd = grouped_df.loc[index, col]
-
-        # attendance computation
-        equiv_wd = normal+(reg_hol*2)+(no_sp_hol*1.3)+(wk_sp_hol*1)+(rd*1.25)
-
-        # C.A. computation
-        if not employee.benefits.ca_remaining == 0:
-            ca_deduction = employee.benefits.ca_deduction
-            ca_remaining = employee.benefits.ca_remaining - ca_deduction
-            if ca_remaining < 0:
-                ca_remaining = 0,
-                ca_deduction = employee.benefits.ca_remaining
-
-        # Income tax computation ->later nani
-        income_tax = 0
-
-        # Monthly deduction (2nd week of the month)
-        last_pay_strip = PayStripTable.query.filter_by().first()
-        if week_in_month(datetime.today()) <= 2:
-            sss = employee.benefits.sss_prem
-            philhealth = employee.benefits.philhealth_prem
-            pag_ibig = employee.benefits.pag_ibig_prem
-            life_insurance = employee.benefits.life_insurance
-
-        # Total pay computation
-        total_pay = (
-                (equiv_wd*employee.compensation.basic)
-                + employee.benefits.allowance1
-                + employee.benefits.allowance2
-                + employee.benefits.allowance3
-        )
-
-        # Total deduction computation
-        total_deduct = (
-            ca_deduction
-            + employee.benefits.sss_prem
-            + employee.benefits.philhealth_prem
-            + employee.benefits.pag_ibig_prem
-            + employee.benefits.life_insurance
-            + income_tax
-        )
-
-        new_pay_strip = PayStripTable(
-            # common data
-            pay_day=datetime.today(),
-            start_date=main_df.index.min(),
-            end_date=main_df.index.max(),
-            employee_name=employee.first_name.title(),
-            employee_id=employee.company_related_info.employee_id.upper(),
-            # attendance
-            normal=normal,
-            reg_hol=reg_hol,
-            no_sp_hol=no_sp_hol,
-            wk_sp_hol=wk_sp_hol,
-            rd=rd,
-            equiv_wd=equiv_wd,
-            # pay
-            basic=employee.compensation.basic,
-            allowance1=employee.compensation.allowance1,
-            allowance2=employee.compensation.allowance2,
-            allowance3=employee.compensation.allowance3,
-            # deduction
-            cash_adv=employee.benefits.cash_adv,
-            ca_date=employee.benefits.ca_date,
-            ca_deduction=ca_deduction,
-            ca_remaining=ca_remaining,
-            sss=sss,
-            philhealth=philhealth,
-            pag_ibig=pag_ibig,
-            life_insurance=life_insurance,
-            income_tax=income_tax,
-            # summary
-            total_pay=total_pay,
-            total_deduct=total_deduct,
-            net_pay=total_pay-total_deduct,
-            transferred_amt1=0,
-            transferred_amt2=0,
-            carry_over_next_month=0,
-            carry_over_past_month=0
-        )
-        db.session.add(new_pay_strip)
-        db.session.commit()
+def is_found(list_to_check, char_to_find):
+    cnt = 0
+    for item in list_to_check:
+        if item == char_to_find:
+            cnt += 1
+    if cnt > 0:
+        return cnt
+    else:
+        return cnt
 
 
