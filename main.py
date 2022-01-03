@@ -6,7 +6,14 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
+# email
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.image import MIMEImage
 
+import pdfkit
+from num2words import num2words
 from _forms import *
 from _util import *
 
@@ -58,9 +65,9 @@ class DispatchTable(UserMixin, db.Model):
     odo_start = db.Column(db.Integer)
     odo_end = db.Column(db.Integer)
     km = db.Column(db.Float(precision=1))
-    cbm = db.Column(db.String(100), nullable=False)
-    qty = db.Column(db.String(100), nullable=False)
-    drops = db.Column(db.String(100), nullable=False)
+    cbm = db.Column(db.Float(precision=1), nullable=False)
+    qty = db.Column(db.Integer, nullable=False)
+    drops = db.Column(db.Integer, nullable=False)
     std_rate = db.Column(db.Float(precision=1), nullable=False)
     rate = db.Column(db.Float(precision=1), nullable=False)
     plate_no = db.Column(db.String(100), nullable=False)
@@ -220,13 +227,29 @@ class Tariff(db.Model, UserMixin):
     encoded_by = db.Column(db.String(10))
 
 
+class Invoice(db.Model, UserMixin):
+    __tablename__ = 'invoice'
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_series = db.Column(db.Integer)
+    invoice_no = db.Column(db.String(100), unique=True)
+    slip_nos = db.Column(db.String)
+    plate_no = db.Column(db.String(10))
+    dispatch_cnt = db.Column(db.Integer)
+    gross_pay = db.Column(db.Float(precision=1))
+    less = db.Column(db.Float(precision=1))
+    amount_due = db.Column(db.Float(precision=1))
+    paid = db.Column(db.String(5))
+    or_no = db.Column(db.String(100))
+    issued_on = db.Column(db.String(100))
+    prepared_date = db.Column(db.String(100))
+    prepared_by = db.Column(db.String(100))
 
-
-
+    # not displayed
+    dispatch_ids = db.Column(db.String(100))
 
 
 # Run only once
-db.create_all()
+# db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -264,7 +287,6 @@ def register():
 
         # Confirm if the registrant is not on the database
         if UserTable.query.filter_by(email=form.email.data).first():
-            print('Hello')
             flash(f"This email: {form.email.data} is already registered.")
             return redirect(url_for("register"))
 
@@ -363,8 +385,6 @@ def input_dispatch():
     form.area.choices = [a.area for a in Tariff.query.order_by("area")]
 
     if form.validate_on_submit():
-        # todo: route function
-        # todo: std rate function
         # Add new dispatch to database
         new_dispatch = DispatchTable(
             dispatch_date=form.dispatch_date.data.strftime("%Y-%m-%d-%a"),
@@ -385,8 +405,8 @@ def input_dispatch():
             driver=form.driver.data.title(),
             courier=form.courier.data.title(),
             encoded_on=date.today().strftime("%Y-%m-%d-%a"),
-            encoded_by=current_user.first_name,
-            encoder_id=current_user.id,
+            encoded_by=current_user.full_name,
+            encoder_id=1,
             pay_day='-',
             invoice_no='-',
             or_no='-',
@@ -762,7 +782,6 @@ def employee_admin_edit(employee_index):
         employee_to_edit.allowance1 = edit_form.allowance1.data
         employee_to_edit.allowance2 = edit_form.allowance2.data
         employee_to_edit.allowance3 = edit_form.allowance3.data
-        # print(edit_form.employment_status.data)
         if edit_form.employment_status.data == "Resigned":
             employee_to_edit.date_resigned = date.today().strftime("%Y-%m-%d-%a")
         else:
@@ -783,7 +802,6 @@ def employee_delete(employee_index):
 
 
 # Payroll---------------------------------------------------------------
-# todo: payroll paystrip
 @app.route("/payroll", methods=["Get", "Post"])
 def payroll():
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
@@ -823,7 +841,6 @@ def add_payroll():
     df1 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["driver"], aggfunc="count")
     df2 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["courier"], aggfunc="count")
     df3 = pd.concat([df1, df2], axis=0).groupby(level=0).sum().fillna(0)
-    print(f"df3: {df3}")
     # initialize code variable
     normal = 0
     reg_hol = 0
@@ -907,7 +924,7 @@ def add_payroll():
             transferred_amt2=transferred_amt2,
             carry_over_next_month=carry_over_next_month,
             carry_over_past_month=carry_over_past_month,
-            paid_on=datetime.today().strftime("%Y-%m-%d-%X"),
+            paid_on=datetime.today().strftime("%Y-%m-%d"),
             paid_by=current_user.full_name
         )
         db.session.add(new_strip)
@@ -917,9 +934,8 @@ def add_payroll():
     indexes = [row[1] for row in unpaid_df.itertuples()]
     for index in indexes:
         disp = DispatchTable.query.get(index)
-        disp.pay_day = datetime.today().strftime("%Y-%m-%d-%X")
+        disp.pay_day = datetime.today().strftime("%Y-%m-%d")
         db.session.commit()
-    print(indexes)
 
     return redirect(url_for('payroll'))
 
@@ -1002,6 +1018,236 @@ def delete_tariff(tariff_id):
     db.session.delete(tariff_to_delete)
     db.session.commit()
     return redirect(url_for("tariff"))
+
+
+@app.route("/invoice", methods=["Get", "Post"])
+def invoice():
+    # get dispatch table
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        disp_df = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx,
+        )
+    # get invoice table
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        inv_df = pd.read_sql_table(
+            table_name="invoice",
+            con=cnx,
+        )
+
+    # check for no invoice no
+    inv_cnt = is_found(disp_df["invoice_no"], "-")
+    if inv_cnt > 0:
+        dispatch_df = disp_df.groupby("invoice_no").get_group("-").sort_values("plate_no", ascending=False)
+    else:
+        dispatch_df = disp_df.groupby("invoice_no").all()
+
+    return render_template('invoice_data.html', dispatch_df=dispatch_df, invoice_df=inv_df, no_invoice_cnt=inv_cnt, )
+
+
+@app.route("/create_invoice/", methods=["Get", "Post"])
+def add_invoice():
+
+    # todo: Rule1. Always get fresh copy of the table that you are working on
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        invoice_df = pd.read_sql_table(
+            table_name="invoice",
+            con=cnx,
+        )
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        dispatch_df = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx,
+        )
+    invoice_list = create_invoice(invoice_df, dispatch_df)
+    for invoice_item in invoice_list:
+        new_invoice = Invoice(
+            invoice_series=invoice_item['invoice_series'],
+            invoice_no=invoice_item['invoice_no'],
+            slip_nos=invoice_item['slip_nos'],
+            plate_no=invoice_item['plate_no'],
+            dispatch_cnt=invoice_item['dispatch_cnt'],
+            gross_pay=invoice_item['gross_pay'],
+            less=invoice_item['less'],
+            amount_due=invoice_item['amount_due'],
+            paid=invoice_item['paid'],
+            or_no=invoice_item['or_no'],
+            issued_on=invoice_item['issued_on'],
+            prepared_date=invoice_item['prepared_date'],
+            prepared_by=invoice_item['prepared_by'],
+            dispatch_ids=invoice_item['dispatch_ids'],
+        )
+        db.session.add(new_invoice)
+        db.session.commit()
+
+        # update invoice number on dispatch database
+        dispatch_ids = get_int_ids(invoice_item['dispatch_ids'])
+        for num in dispatch_ids:
+            dispatch_to_update = DispatchTable.query.get(num)
+            dispatch_to_update.invoice_no = invoice_item['invoice_no']
+            db.session.commit()
+
+    return redirect(url_for('invoice'))
+
+
+@app.route("/print_invoice/<int:invoice_id>", methods=["Post", "Get"])
+def print_invoice(invoice_id):
+    # step1: get invoice target invoice
+    invoice_to_print = Invoice.query.get(invoice_id)
+    ids = get_int_ids(invoice_to_print.dispatch_ids)
+    gross_pay = invoice_to_print.gross_pay
+    less = invoice_to_print.less
+    amount_due = invoice_to_print.amount_due
+    inv_no = invoice_to_print.invoice_no
+    inv_date = date.today()
+
+    # step2: get fresh copy of dispatch
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(table_name="dispatch", con=cnx,)
+
+    # step3: retrieve dispatch with the following ids]
+    print_this = df[df.id.isin(ids)]
+    amt_in_words = num2words(amount_due)
+    in_words = amt_in_words.title() + ' pesos'
+
+    # using FPDF-------------------------------------------------------------------------------------------------
+    # create object
+    pdf = PDF('P', 'mm', 'A4')
+    # get total page numbers
+    pdf.alias_nb_pages()
+    # metadata
+    pdf.set_title(f'{inv_no}')
+    pdf.set_author('Gaspar Mamac')
+    # set auto page break
+    pdf.set_auto_page_break(auto=True, margin=15)
+    # add page
+    pdf.add_page()
+
+    # Company
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.cell(0, 8, 'Mamac Logistics Services', ln=1, border=0)
+    # address
+    pdf.set_font('helvetica', '', 8)
+    pdf.set_text_color(169, 169, 169)
+    pdf.cell(0, 5, "Blk 3, Lot 9, Lulu Village, Brgy. R.Castillo Agdao District", ln=1, border=0)
+    pdf.cell(0, 5, "Cellphone#: 0948-6877234 / 0923-6003604 /0965-2965333 Tel#: (082)228-5232", ln=1, border=0)
+
+    # line break
+    pdf.set_font('helvetica', 'B', 12)
+    pdf.set_fill_color(169, 169, 169)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(0, 10, "BILLING STATEMENT", border=0, ln=1, align='C', fill=1)
+
+    # bill to
+    pdf.set_font('helvetica', '', 8)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(15, 6, 'Bill to: ', ln=0, border=0)
+    # customer
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(115, 6, 'LBC Expres Inc.', ln=0, border=0)
+    # invoice no
+    pdf.set_font('helvetica', '', 8)
+    pdf.cell(20, 6, 'Invoice no: ', border=0)
+    # actual invoice#
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(25, 6, f'{inv_no}', ln=1, border=0)
+
+    pdf.set_font('helvetica', '', 8)
+    pdf.cell(15, 6, 'Address: ', ln=0, border=0)
+    pdf.cell(115, 6, "Km. 7, Lanang Davao City", ln=0, border=0)
+    pdf.cell(20, 6, "Invoice Date: ", ln=0, border=0)
+    pdf.cell(25, 6, f"{date.today()}", ln=1, border=0)
+
+    # line break
+    pdf.ln('20')
+
+    # dispatch from - to
+    pdf.cell(10, 6, "From: ", ln=0, border=0)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(25, 6, f"{print_this.dispatch_date.min()}", ln=0, border=0)
+    pdf.set_font('helvetica', '', 8)
+    pdf.cell(10, 6, "To: ", ln=0, border=0)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(25, 6, f"{print_this.dispatch_date.max()}", ln=1, border=0)
+
+    # table
+    header = ['Dispatch date', 'Slip no', 'Plate no', 'Area', 'Dropping point/s', 'Cbm', 'Qty', 'Drops', 'Rate']
+    # header
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(25, 6, 'Dispatch date',border=1)
+    pdf.cell(20, 6, 'Slip no', border=1)
+    pdf.cell(20, 6, 'Plate no', border=1)
+    pdf.cell(30, 6, 'Area', border=1)
+    pdf.cell(35, 6, 'Dropping point/s', border=1)
+    pdf.cell(12, 6, 'Cbm', border=1)
+    pdf.cell(12, 6, 'Qty', border=1)
+    pdf.cell(12, 6, 'Drop/s', border=1)
+    pdf.cell(25, 6, 'Amount', border=1, ln=1)
+
+    # data
+    pdf.set_font('helvetica', '', 8)
+    for row in print_this.itertuples():
+        pdf.cell(25, 6, row[2], border=1)
+        pdf.cell(20, 6, row[4], border=1)
+        pdf.cell(20, 6, row[16], border=1)
+        pdf.cell(30, 6, row[6], border=1)
+        pdf.cell(35, 6, row[7], border=1)
+        pdf.cell(12, 6, row[11], border=1)
+        pdf.cell(12, 6, row[12], border=1)
+        pdf.cell(12, 6, row[13], border=1)
+        pdf.cell(25, 6, str(row[15]), border=1, ln=1)
+    # summary
+    pdf.cell(142, 6, border=1)
+    pdf.cell(24, 6, 'Gross', border=1)
+    pdf.cell(25, 6, str(gross_pay), border=1, ln=1)
+    pdf.cell(142, 6, border=1)
+    pdf.cell(24, 6, 'Less', border=1)
+    pdf.cell(25, 6, str(less), border=1, ln=1)
+    pdf.cell(142, 6, border=1)
+    pdf.cell(24, 6, 'Amount due', border=1)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(25, 6, str(amount_due), border=1, ln=1)
+
+    # amount in words
+    pdf.set_font('helvetica', '', 8)
+    pdf.cell(40, 6, 'Amount due in words:', ln=1)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(40, 6, in_words, ln=1)
+
+    # payable to
+    pdf.set_font('helvetica', 'I', 8)
+    pdf.cell(45, 6, 'Please make all checks payable to:', ln=0)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(40, 6, ' Mr. Gaspar Q. Mamac', ln=1)
+
+    # approve by (delete later)
+    pdf.ln(10)
+    pdf.set_font('helvetica', '', 8)
+    pdf.cell(130, 6, 'Checked and Approved by:', ln=0, border=0)
+    pdf.cell(35, 6, 'Received by:', ln=1, border=0)
+    pdf.set_font('helvetica', 'B', 8)
+    pdf.cell(130, 6, ' Mr. Nimrod Q. Mamac', ln=0)
+    pdf.cell(130, 6, '____________________', ln=1)
+    pdf.cell(130, 6, '', ln=0)
+    pdf.set_font('helvetica', 'I', 8)
+    pdf.cell(130, 1, '(Name/Signature/Date)', ln=1)
+    pdf.output(name=f"./invoices/{inv_no}.pdf")
+
+    # attached pdf invoice to email
+    # my_email = "mamaclogisticsservices441@gmail.com"
+    # password = "!@#password"
+    # msg = MIMEMultipart()
+    # msg.attach(MIMEText(open(f"./invoices/2022-LWD-1.pdf", encoding='cp850').read()))
+    # with smtplib.SMTP("smtp.gmail.com") as connection:
+    #     connection.starttls()
+    #     connection.login(user=my_email, password=password)
+    #     connection.sendmail(
+    #         from_addr=my_email,
+    #         to_addrs="gasparmamac@gmail.com",
+    #         msg=msg
+    #     )
+
+    return render_template('print_invoice.html', print_this=print_this, gross_pay=gross_pay, less=less, amount_due=amount_due, amt_in_words=in_words, inv_no=inv_no, inv_date=inv_date)
 
 
 if __name__ == "__main__":

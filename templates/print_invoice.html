@@ -1,0 +1,106 @@
+{% extends 'bootstrap/base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% block styles %}
+    {{super()}}
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" type="text/css">
+
+    <!--custom css-->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" type="text/css">
+
+{% endblock %}
+{% block title %}{{inv_no}}{% endblock %}
+
+{% block content %}
+    <div class="container my-5">
+        <h3>MAMAC LOGISTICS SERVICES</h3>
+        <p class="text-muted">Blk 3, Lot 9, Lulu Village, Brgy. R.Castillo Agdao District</p>
+        <p class="text-muted">Cellphone#: 0948-6877234 / 0923-6003604 /0965-2965333 | Tel#: (082)228-5232</p>
+        <hr>
+        <h3 class="text-center">BILLING STATEMENT</h3>
+        <hr>
+        <div class="hstack ">
+            <p>Bill to: <span class="fw-bold">LBC Express Inc.</span></p>
+            <p class="ms-auto">Invoice no: <span class="fw-bold">{{ inv_no }}</span></p>
+        </div>
+        <div class="hstack ">
+            <p>Address: <span>Km. 7, Lanang, Davao City</span></p>
+            <p class="ms-auto">Invoice date: <span>{{ inv_date }}</span></p>
+        </div>
+        <br>
+        <div class="hstack gap-3">
+            <p>From <span class="fw-bold">{{ print_this.dispatch_date.min() }}</span> to <span class="fw-bold">{{ print_this.dispatch_date.max() }}</span> </p>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover table-bordered table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">Dispatch date</th>
+                    <th scope="col">Slip no</th>
+                    <th scope="col">Plate no</th>
+                    <th scope="col">Area</th>
+                    <th scope="col">Dropping point</th>
+                    <th scope="col">Cbm</th>
+                    <th scope="col">Qty</th>
+                    <th scope="col">Drops</th>
+                    <th scope="col">Charge Rate</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in print_this.itertuples(): %}
+                <tr>
+                    <td>{{ row[2] }}</td>
+                    <td>{{ row[4] }}</td>
+                    <td>{{ row[16] }}</td>
+                    <td>{{ row[6] }}</td>
+                    <td>{{ row[7] }}</td>
+                    <td>{{ row[11] }}</td>
+                    <td>{{ row[12] }}</td>
+                    <td>{{ row[13] }}</td>
+                    <td>{{ row[15] }}</td>
+                    {% endfor %}
+                </tr>
+                <tr>
+                    <td colspan="7"></td>
+                    <td>Total</td>
+                    <td>{{gross_pay}}</td>
+                </tr>
+                <tr>
+                    <td colspan="7"></td>
+                    <td>Less 2%</td>
+                    <td>{{less}}</td>
+                </tr>
+                <tr>
+                    <td colspan="7"></td>
+                    <td>Amount due</td>
+                    <td class="fw-bold">{{amount_due}}</td>
+                </tr>
+
+                </tbody>
+            </table>
+        </div>
+        <p>Amount in words:</p><h5>{{amt_in_words}}</h5>
+        <br>
+        <p><em>Please make all checks payable to: </em><span class="fw-bold">Mr. Gaspar Mamac</span></p>
+        <hr>
+        <br>
+        <br>
+<!--        Delete later-->
+         <div class="hstack ">
+            <p>Checked and Approved by:</p>
+            <p class="ms-auto">Received by:</p>
+        </div>
+
+         <div class="hstack ">
+            <p>Nimrod Q. Mamac</p>
+        </div>
+        <div class="hstack ">
+            <p></p>
+            <p class="ms-auto"><em>(Name/Date/Signature)</em></p>
+        </div>
+        <br>
+        <br>
+        <footer class="text-center text-muted">This a system generated report. For any concern, kindly contact us or email to: <em>gaspar.mamac@gmail.com</em></footer>
+    </div>
+
+{% endblock  %}
