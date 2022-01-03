@@ -40,7 +40,7 @@ db = SQLAlchemy(app)
 
 class UserTable(UserMixin, db.Model):
     __tablename__ = "users"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     email = db.Column(db.String(100), unique=True)
     password = db.Column(db.String(100))
     first_name = db.Column(db.String(100))
@@ -55,7 +55,7 @@ class UserTable(UserMixin, db.Model):
 
 class DispatchTable(UserMixin, db.Model):
     __tablename__ = "dispatch"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     dispatch_date = db.Column(db.String(100), nullable=False)
     wd_code = db.Column(db.String(100), nullable=False)
     slip_no = db.Column(db.String(100), nullable=False)
@@ -73,7 +73,7 @@ class DispatchTable(UserMixin, db.Model):
     plate_no = db.Column(db.String(100), nullable=False)
     driver = db.Column(db.String(100), nullable=False)
     courier = db.Column(db.String(100), nullable=False)
-    pay_day = db.Column(db.String(100), nullable=False)
+    forwarded_date = db.Column(db.String(100), nullable=False)
     invoice_no = db.Column(db.String(100))
     or_no = db.Column(db.String(100))
     or_amt = db.Column(db.Float(precision=1))
@@ -85,7 +85,7 @@ class DispatchTable(UserMixin, db.Model):
 
 class MaintenanceTable(UserMixin, db.Model):
     __tablename__ = "maintenance"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     date = db.Column(db.String(100), nullable=False)
     plate_no = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
@@ -97,11 +97,12 @@ class MaintenanceTable(UserMixin, db.Model):
     encoded_by = db.Column(db.String(100))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("UserTable", back_populates="maintenance")
+    date_settled = db.Column(db.String(100))
 
 
 class AdminExpenseTable(UserMixin, db.Model):
     __tablename__ = "admin"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     date = db.Column(db.String(100), nullable=False)
     agency = db.Column(db.String(100), nullable=False)
     office = db.Column(db.String(100), nullable=False)
@@ -111,12 +112,13 @@ class AdminExpenseTable(UserMixin, db.Model):
     encoded_by = db.Column(db.String(100))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("UserTable", back_populates="admin_exp")
+    date_settled = db.Column(db.String(100))
 
 
 class PayStripTable(UserMixin, db.Model):
     __tablename__ = "pay_strip"
-    id = db.Column(db.Integer, primary_key=True)
-    pay_day = db.Column(db.String(100), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    date_settled = db.Column(db.String(100))
     start_date = db.Column(db.String(100), nullable=False)
     end_date = db.Column(db.String(100), nullable=False)
     employee_name = db.Column(db.String(100), nullable=False)
@@ -158,13 +160,14 @@ class PayStripTable(UserMixin, db.Model):
     carry_over_next_month = db.Column(db.Float(precision=2))
     carry_over_past_month = db.Column(db.Float(precision=2))
 
-    paid_on = db.Column(db.String(100))
+    gen_date = db.Column(db.String(100))
     paid_by = db.Column(db.String(100))
+    dispatch_ids = db.Column(db.String(200))
 
 
 class EmployeeProfileTable(UserMixin, db.Model):
     __tablename__ = "employee"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
 
     # personal info
     first_name = db.Column(db.String(100), nullable=False)
@@ -215,7 +218,7 @@ class EmployeeProfileTable(UserMixin, db.Model):
 
 class Tariff(db.Model, UserMixin):
     __tablename__ = 'tariff'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     route = db.Column(db.String, nullable=True)
     area = db.Column(db.String(100), nullable=True)
     km = db.Column(db.Float(precision=1))
@@ -229,7 +232,7 @@ class Tariff(db.Model, UserMixin):
 
 class Invoice(db.Model, UserMixin):
     __tablename__ = 'invoice'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, unique=True)
     invoice_series = db.Column(db.Integer)
     invoice_no = db.Column(db.String(100), unique=True)
     slip_nos = db.Column(db.String)
@@ -245,7 +248,7 @@ class Invoice(db.Model, UserMixin):
     prepared_by = db.Column(db.String(100))
 
     # not displayed
-    dispatch_ids = db.Column(db.String(100))
+    dispatch_ids = db.Column(db.String(200))
 
 
 # Run only once
@@ -390,7 +393,7 @@ def input_dispatch():
             dispatch_date=form.dispatch_date.data.strftime("%Y-%m-%d-%a"),
             wd_code=form.wd_code.data,
             slip_no=form.slip_no.data,
-            route="?",
+            route="-",
             area=form.area.data.title(),
             destination=form.destination.data.title(),
             odo_start=form.odo_start.data,
@@ -407,7 +410,7 @@ def input_dispatch():
             encoded_on=date.today().strftime("%Y-%m-%d-%a"),
             encoded_by=current_user.full_name,
             encoder_id=1,
-            pay_day='-',
+            forwarded_date='-',
             invoice_no='-',
             or_no='-',
             or_amt=0
@@ -440,8 +443,8 @@ def edit_dispatch(dispatch_id):
         plate_no=dispatch_to_edit.plate_no,
     )
     # choices for select field
-    choices1 = ["?"]
-    choices2 = ["?"]
+    choices1 = ["-"]
+    choices2 = ["-"]
 
     a = [g.full_name for g in EmployeeProfileTable.query.order_by("last_name")]
     b = [a.area for a in Tariff.query.order_by("area")]
@@ -453,7 +456,7 @@ def edit_dispatch(dispatch_id):
     edit_form.courier.choices = choices1
     edit_form.area.choices = choices2
 
-    route = "?"
+    route = "-"
 
     # load back edited form data to db
     if edit_form.validate_on_submit():
@@ -673,23 +676,23 @@ def employee_add():
             contact_no=form.contact_no.data,
             facebook=form.facebook.data,
             # CompanyInfo
-            employee_id="?",
+            employee_id="-",
             date_hired=date.today().strftime("%Y-%m-%d-%a"),
-            date_resigned="?",
-            employment_status="?",
-            position="?",
-            rank="?",
+            date_resigned="-",
+            employment_status="-",
+            position="-",
+            rank="-",
             # Benefits
-            sss_no="?",
-            philhealth_no="?",
-            pag_ibig_no="?",
+            sss_no="-",
+            philhealth_no="-",
+            pag_ibig_no="-",
             # benefits premiums
             sss_prem=0,
             philhealth_prem=0,
             pag_ibig_prem=0,
             # deductions
             cash_adv=0,
-            ca_date="?",
+            ca_date="-",
             ca_deduction=0,
             ca_remaining=0,
             # Compensation
@@ -785,7 +788,7 @@ def employee_admin_edit(employee_index):
         if edit_form.employment_status.data == "Resigned":
             employee_to_edit.date_resigned = date.today().strftime("%Y-%m-%d-%a")
         else:
-            employee_to_edit.date_resigned = ""
+            employee_to_edit.date_resigned = "-"
 
         db.session.commit()
         return redirect(url_for("employees"))
@@ -798,7 +801,6 @@ def employee_delete(employee_index):
     db.session.delete(employee_to_delete)
     db.session.commit()
     return redirect(url_for('employees'))
-    pass
 
 
 # Payroll---------------------------------------------------------------
@@ -810,14 +812,14 @@ def payroll():
             con=cnx, index_col='dispatch_date',
             columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
                      'area', 'destination', 'cbm', 'qty', 'drops', 'plate_no',
-                     'driver', 'courier', 'pay_day'
+                     'driver', 'courier', 'forwarded_date'
                      ],
         )
     # check for unpaid dispatch
-    unpaid_cnt = is_found(raw["pay_day"], "-")
+    unpaid_cnt = is_found(raw["forwarded_date"], "-")
     if unpaid_cnt > 0:
         paid = False
-        df = raw.groupby("pay_day").get_group("-").sort_values("dispatch_date", ascending=False)  # group of unpaid dispatches
+        df = raw.groupby("forwarded_date").get_group("-").sort_values("dispatch_date", ascending=False)  # group of unpaid dispatches
 
     else:
         paid = True
@@ -825,23 +827,35 @@ def payroll():
 
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
-        pay_strip_df = strip_df.head(n=25).sort_values("paid_on", ascending=False)
+        pay_strip_df = strip_df.head(n=25).sort_values("gen_date", ascending=False)
 
     return render_template("payroll.html", unpaid_df=df, pay_strip_df=pay_strip_df, paid=paid, unpaid_cnt=unpaid_cnt)
 
 
 @app.route("/add_payroll", methods=["Get", "Post"])
 def add_payroll():
+    # step0: get fresh dispatch data
+    # step1: group unpaid dispatch
+    # step2: re-arrange unpaid dispatch group into index = wd_code and column labels = driver and courier
+    # step3: create paystrip per column labels (or per employee)
+
+    # step0
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         raw = pd.read_sql_table(
             table_name="dispatch",
             con=cnx, index_col='dispatch_date',
         )
-    unpaid_df = raw.groupby("pay_day").get_group("-")  # group of unpaid dispatches
+
+    # step1
+    unpaid_df = raw.groupby("forwarded_date").get_group("-")  # group of unpaid dispatches
     df1 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["driver"], aggfunc="count")
     df2 = unpaid_df.pivot_table(values="slip_no", index=["wd_code"], columns=["courier"], aggfunc="count")
+
+    # step2
     df3 = pd.concat([df1, df2], axis=0).groupby(level=0).sum().fillna(0)
-    # initialize code variable
+
+    # step3
+    # initialize code variables
     normal = 0
     reg_hol = 0
     no_sp_hol = 0
@@ -885,9 +899,18 @@ def add_payroll():
         carry_over_next_month = 0
         carry_over_past_month = 0
 
+        # dispatch ids for each employee
+        dispatch_ids = []
+        if not unpaid_df[unpaid_df.driver == emp.full_name].empty:
+            driver_group = unpaid_df.groupby('driver').get_group(emp.full_name)
+            dispatch_ids = driver_group.id.tolist()
+        elif not unpaid_df[unpaid_df.courier == emp.full_name].empty:
+            courier_group = unpaid_df.groupby('courier').get_group(emp.full_name)
+            dispatch_ids = courier_group.id.tolist()
+
         # update paystrip table
         new_strip = PayStripTable(
-            pay_day="?",
+            date_settled="-",
             start_date=unpaid_df.index.min(),
             end_date=unpaid_df.index.max(),
             employee_name=emp.full_name,
@@ -905,7 +928,7 @@ def add_payroll():
             allowance2=emp.allowance2,
             allowance3=emp.allowance3,
             pay_adj=0,
-            pay_adj_reason="?",
+            pay_adj_reason="-",
             # deduction
             cash_adv=emp.cash_adv,
             ca_date=emp.ca_date,
@@ -924,18 +947,18 @@ def add_payroll():
             transferred_amt2=transferred_amt2,
             carry_over_next_month=carry_over_next_month,
             carry_over_past_month=carry_over_past_month,
-            paid_on=datetime.today().strftime("%Y-%m-%d"),
-            paid_by=current_user.full_name
+            gen_date=datetime.today().strftime("%Y-%m-%d"),
+            paid_by=current_user.full_name,
+            dispatch_ids=str(dispatch_ids)
         )
         db.session.add(new_strip)
         db.session.commit()
 
-    # update un-forwarded df
-    indexes = [row[1] for row in unpaid_df.itertuples()]
-    for index in indexes:
-        disp = DispatchTable.query.get(index)
-        disp.pay_day = datetime.today().strftime("%Y-%m-%d")
-        db.session.commit()
+        indexes = [row[1] for row in unpaid_df.itertuples()]
+        for index in indexes:
+            disp = DispatchTable.query.get(index)
+            disp.forwarded_date = datetime.today().strftime("%Y-%m-%d")
+            db.session.commit()
 
     return redirect(url_for('payroll'))
 
@@ -1048,7 +1071,7 @@ def invoice():
 @app.route("/create_invoice/", methods=["Get", "Post"])
 def add_invoice():
 
-    # todo: Rule1. Always get fresh copy of the table that you are working on
+    # step0:
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
         invoice_df = pd.read_sql_table(
             table_name="invoice",
@@ -1192,9 +1215,9 @@ def print_invoice(invoice_id):
         pdf.cell(20, 6, row[16], border=1)
         pdf.cell(30, 6, row[6], border=1)
         pdf.cell(35, 6, row[7], border=1)
-        pdf.cell(12, 6, row[11], border=1)
-        pdf.cell(12, 6, row[12], border=1)
-        pdf.cell(12, 6, row[13], border=1)
+        pdf.cell(12, 6, str(row[11]), border=1)
+        pdf.cell(12, 6, str(row[12]), border=1)
+        pdf.cell(12, 6, str(row[13]), border=1)
         pdf.cell(25, 6, str(row[15]), border=1, ln=1)
     # summary
     pdf.cell(142, 6, border=1)
@@ -1248,6 +1271,31 @@ def print_invoice(invoice_id):
     #     )
 
     return render_template('print_invoice.html', print_this=print_this, gross_pay=gross_pay, less=less, amount_due=amount_due, amt_in_words=in_words, inv_no=inv_no, inv_date=inv_date)
+
+
+@app.route("/transaction", methods=["Post", "Get"])
+def transaction():
+    # step0: get fresh copy of dispatch
+    # step1: construct no_transaction_date from dispatch
+    # step2: construct dataframe per employee from no_transaction_date group
+    # step3: create list of list of required data from each dataframe from step2
+
+    # step0
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx,
+        )
+
+    # step1
+    no_transaction_grp = df.groupby("forwarded_date").get_group("-")
+
+    # step2
+    emp_list = no_transaction_grp.driver.unique().tolist() + no_transaction_grp.courier.unique().tolist()
+
+    print(emp_list)
+
+    return redirect(url_for('payroll'))
 
 
 if __name__ == "__main__":

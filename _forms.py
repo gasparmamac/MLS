@@ -191,6 +191,12 @@ class CashAdvForm(FlaskForm):
     deduction = FloatField("Deduction")
 
 
+class TransactionForm(FlaskForm):
+    pass
+
+
+
+
 
 
 

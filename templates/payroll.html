@@ -13,7 +13,7 @@
                 {% if paid: %}
                     <caption>No unpaid dispatch found</caption>
                 {% else: %}
-                    <caption>Found {{unpaid_cnt }} unpaid dispatched. <a href="{{ url_for('add_payroll')}}" class="btn btn-primary">Pay</a></caption>
+                    <caption>Found {{unpaid_cnt }} unpaid dispatched. <a href="{{ url_for('add_payroll')}}" class="btn btn-primary">Forward to paystrip</a></caption>
 
                 {% endif %}
                 <thead>
@@ -29,7 +29,7 @@
                     <th scope="col">Plate no</th>
                     <th scope="col">Driver</th>
                     <th scope="col">Courier</th>
-                    <th scope="col">Payroll date</th>
+                    <th scope="col">Forwarded date</th>
                     <th scope="col">*</th>
                 </tr>
                 </thead>
@@ -91,6 +91,7 @@
                     <th scope="col">Total deduction</th>
                     <th scope="col">Net Pay</th>
                     <th scope="col">Paid by</th>
+                    <th scope="col">Dispatch ids</th>
                     <th scope="col">*</th>
                 </tr>
                 </thead>
@@ -126,6 +127,7 @@
                     <td>{{ row[29] }}</td>
                     <td>{{ row[30] }}</td>
                     <td>{{ row[36] }}</td>
+                    <td>{{ row[37] }}</td>
                     <td><a href="#">generate payslip</a></td>
 
                 </tr>
