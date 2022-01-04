@@ -81,9 +81,9 @@
                     <td>{{ row[29] }}</td>
                     <td>{{ row[30] }}</td>
                     <td>{{ row[31] }}</td>
-                <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">Edit</a></td>
-                <td><a href="{{ url_for('employee_admin_edit', employee_index=row[1]) }}">Admin</a></td>
-                <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">Delete</a></td>
+                <td><a href="{{ url_for('employee_edit', employee_index=row[1]) }}">edit</a></td>
+                <td><a href="{{ url_for('employee_admin_edit', employee_index=row[1]) }}">admin</a></td>
+                <td><a href="{{ url_for('employee_delete', employee_index=row[1]) }}">delete</a></td>
                 </tr>
                 {% endfor %}
                 </tbody>

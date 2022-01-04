@@ -27,6 +27,9 @@
               <a class="nav-link" href="{{ url_for('invoice')}}">Invoice</a>
           </li>
           <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('transaction')}}">Transaction</a>
+          </li>
+          <li class="nav-item">
               <a class="nav-link" href="{{ url_for('dispatch') }}">Dispatch</a></li>
 
         {% if current_user.is_authenticated %}

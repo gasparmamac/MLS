@@ -24,6 +24,7 @@
                     <th scope="col">Service charge</th>
                     <th scope="col">Total</th>
                     <th scope="col">Encoded by</th>
+                    <th scope="col">Date settled</th>
                     <th scope="col">*</th>
                     <th scope="col">**</th>
                 </tr>
@@ -40,8 +41,9 @@
                     <td>{{ row[8] }}</td>
                     <td>{{ row[9] }}</td>
                     <td>{{ row[10] }}</td>
-                <td><a href="{{ url_for('edit_maintenance', maintenance_id=row[1]) }}">Edit</a></td>
-                <td><a href="{{ url_for('delete_maintenance', maintenance_id=row[1]) }}">Delete</a></td>
+                    <td>{{ row[12] }}</td>
+                <td><a href="{{ url_for('edit_maintenance', maintenance_id=row[1]) }}">edit</a></td>
+                <td><a href="{{ url_for('delete_maintenance', maintenance_id=row[1]) }}">delete</a></td>
                 </tr>
                 {% endfor %}
                 </tbody>

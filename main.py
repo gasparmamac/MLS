@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, url_for, abort, flash
+from flask import Flask, render_template, redirect, url_for, abort, flash, request
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, \
     current_user, logout_user
@@ -249,6 +249,17 @@ class Invoice(db.Model, UserMixin):
 
     # not displayed
     dispatch_ids = db.Column(db.String(200))
+
+
+class Trasaction(db.Model, UserMixin):
+    __tablename__ = "transaction"
+    id = db.Column(db.Integer, primary_key=True, unique=True)
+    trans_date = db.Column(db.String(100))
+    paystrip_ids = db.Column(db.String(200))
+    maintenance_ids = db.Column(db.String(100))
+    admin_ids = db.Column(db.String(100))
+    by = db.Column(db.String(100))
+    on = db.Column(db.String(100))
 
 
 # Run only once
@@ -525,7 +536,8 @@ def input_maintenance():
             tools_amt=form.tools_amt.data,
             service_charge=form.service_charge.data,
             total_amt=form.pyesa_amt.data + form.tools_amt.data + form.service_charge.data,
-            encoded_by=current_user.first_name.title()
+            encoded_by=current_user.first_name.title(),
+            date_settled='-'
         )
         db.session.add(new_record)
         db.session.commit()
@@ -600,7 +612,8 @@ def input_admin():
             frequency=form.frequency.data.title(),
             description=form.description.data.title(),
             amount=form.amount.data,
-            encoded_by=current_user.first_name.title()
+            encoded_by=current_user.first_name.title(),
+            date_settled='-'
         )
         db.session.add(new_record)
         db.session.commit()
@@ -963,6 +976,11 @@ def add_payroll():
     return redirect(url_for('payroll'))
 
 
+@app.route("/adjust_paystrip/<int:strip_id>", methods=["Post", "Get"])
+def adj_paystrip():
+    pass
+
+
 @app.route("/delete_paystrip/<int:paystrip_id>", methods=["Get", "Post"])
 def delete_payroll(paystrip_id):
     payroll_to_delete = PayStripTable.query.get(paystrip_id)
@@ -1275,28 +1293,131 @@ def print_invoice(invoice_id):
 
 @app.route("/transaction", methods=["Post", "Get"])
 def transaction():
-    # step0: get fresh copy of dispatch
-    # step1: construct no_transaction_date from dispatch
-    # step2: construct dataframe per employee from no_transaction_date group
-    # step3: create list of list of required data from each dataframe from step2
+    # step0: get fresh copy of paystrip, maintenance, admin
+    # step1: count each unsettle items
+    # step2: create df for each table that has unsettled items
+    # step3: display result
+    # step4: with save, update date settled on paystrip, maint and admin tables
+    # step5: update trasaction table
+
+    # initializing variables
 
     # step0
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
-        df = pd.read_sql_table(
-            table_name="dispatch",
+        df1 = pd.read_sql_table(
+            table_name="pay_strip",
+            con=cnx,
+        )
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df2 = pd.read_sql_table(
+            table_name="maintenance",
+            con=cnx,
+        )
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df3 = pd.read_sql_table(
+            table_name="admin",
             con=cnx,
         )
 
     # step1
-    no_transaction_grp = df.groupby("forwarded_date").get_group("-")
+    if not df1[df1.date_settled == "-"].empty:
+        paystrip_grp = df1.groupby('date_settled').get_group('-')
+        payroll_ttl = paystrip_grp.net_pay.sum()
+        pay_cnt = len(df1.date_settled.tolist())
+    else:
+        paystrip_grp = 'none'
+        payroll_ttl = 0
+        pay_cnt = 0
 
-    # step2
-    emp_list = no_transaction_grp.driver.unique().tolist() + no_transaction_grp.courier.unique().tolist()
+    if not df2[df2.date_settled == "-"].empty:
+        maint_grp = df2.groupby('date_settled').get_group('-')
+        maint_ttl = maint_grp.total_amt.sum()
+        maint_cnt = len(df2.date_settled.tolist())
+    else:
+        maint_grp = 'none'
+        maint_ttl = 0
+        maint_cnt = 0
 
-    print(emp_list)
+    if not df3[df3.date_settled == "-"].empty:
+        admin_grp = df3.groupby('date_settled').get_group('-')
+        admin_ttl = admin_grp.amount.sum()
+        admin_cnt = len(df3.date_settled.tolist())
+    else:
+        admin_grp = 'none'
+        admin_ttl = 0
+        admin_cnt = 0
 
-    return redirect(url_for('payroll'))
+    # other contents
+    trans_date = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+    grand_ttl = payroll_ttl + maint_ttl + admin_ttl
+    amt_in_words = num2words(grand_ttl).title() + ' pesos'
 
+    # step4
+    if request.method == "POST":
+        if request.form.get('save_button') == 'clicked':
+            # update paystrip settled date
+            if not df1[df1.date_settled == "-"].empty:
+                paystrip_ids = paystrip_grp.id.tolist()
+                for paystrip_id in paystrip_ids:
+                    paystrip_to_edit = PayStripTable.query.get(paystrip_id)
+                    paystrip_to_edit.date_settled = trans_date
+                    db.session.commit()
+            else:
+                paystrip_ids = []
+
+            # update maintenance settled date
+            if not df2[df2.date_settled == "-"].empty:
+                maint_ids = maint_grp.id.tolist()
+                for maint_id in maint_ids:
+                    maint_to_edit = MaintenanceTable.query.get(maint_id)
+                    maint_to_edit.date_settled = trans_date
+                    db.session.commit()
+            else:
+                maint_ids = []
+
+            # update admin settled date
+            if not df3[df3.date_settled == "-"].empty:
+                admin_ids = admin_grp.id.tolist()
+                for admin_id in admin_ids:
+                    admin_to_edit = AdminExpenseTable.query.get(admin_id)
+                    admin_to_edit.date_settled = trans_date
+                    db.session.commit()
+            else:
+                admin_ids = []
+
+            # step5
+            new_trans = Trasaction(
+                trans_date=trans_date,
+                paystrip_ids=str(paystrip_ids),
+                maintenance_ids=str(maint_ids),
+                admin_ids=str(admin_ids),
+                by='Gaspar',
+                on=datetime.today().strftime('%Y-%m-%d')
+            )
+            db.session.add(new_trans)
+            db.session.commit()
+
+            return redirect(url_for('transaction'))
+
+        # elif request.form.get('cancel_button') == 'clicked':
+        #     return redirect(url_for('payroll'))
+
+        else:
+            return redirect(url_for('transaction'))
+
+    return render_template('transaction.html',
+                           pay_cnt=pay_cnt, maint_cnt=maint_cnt, admin_cnt=admin_cnt,
+                           paystrip_df=paystrip_grp, maint_df=maint_grp, admin_df=admin_grp,
+                           payroll_ttl=payroll_ttl, maint_ttl=maint_ttl, admin_ttl=admin_ttl, grand_ttl=grand_ttl,
+                           trans_date=trans_date, amt_in_words=amt_in_words)
+
+# todo: 1. O.R. number and amount update for lbc payment
+# todo: 2.Pay adj routine
+# todo: 3. Deduction routine (C.A, SSS)
+# todo: 4. table data display and filtering
+# todo: 5 app authorization
+# todo: 6 forgot password routine
+# todo: 7 home page
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,51 +1,47 @@
-import string
-
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, IntegerField, FloatField, SelectField, RadioField, \
     TextAreaField
-from wtforms.validators import DataRequired
-from wtforms.fields.html5 import DateField, DateTimeField
+from wtforms.validators import InputRequired
+from wtforms.fields.html5 import DateField
 
 
 class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    email = StringField('Email', validators=[InputRequired()])
+    password = PasswordField('Password', validators=[InputRequired()])
     submit = SubmitField('Login')
 
 
 class RegisterForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    first_name = StringField("First name", validators=[DataRequired()])
-    middle_name = StringField("Middle name", validators=[DataRequired()])
-    last_name = StringField("Last Name", validators=[DataRequired()])
+    email = StringField("Email", validators=[InputRequired()])
+    password = PasswordField("Password", validators=[InputRequired()])
+    first_name = StringField("First name", validators=[InputRequired()])
+    middle_name = StringField("Middle name", validators=[InputRequired()])
+    last_name = StringField("Last Name", validators=[InputRequired()])
     extn_name = StringField("Extn name. (ex. Jr, Sr. III)")
     submit = SubmitField("Register")
 
 
 class DispatchForm(FlaskForm):
-    dispatch_date = DateField("Dispatch date", validators=[DataRequired()])
+    dispatch_date = DateField("Dispatch date", validators=[InputRequired()])
     wd_code = SelectField("WD code", choices=[
         ("normal", "Normal Working day"),
         ("reg_hol", "Regular holiday"),
         ("no_sp_hol", "Non-working special holiday"),
         ("wk_sp_hol", "Working special holiday"),
         ("rd", "Rest day")
-    ])
-    slip_no = StringField("Slip no", validators=[DataRequired()])
-    area = SelectField("Area")
-    destination = StringField("Destination", validators=[DataRequired()])
-    odo_start = IntegerField("Odo start (Km)")
-    odo_end = IntegerField("Odo end (Km)")
-    cbm = FloatField("Cbm", validators=[DataRequired()])
-    qty = IntegerField("Qty", validators=[DataRequired()])
-    drops = IntegerField("Drops", validators=[DataRequired()])
-    rate = FloatField("Charge Rate", validators=[DataRequired()])
-    plate_no = StringField("Plate no", validators=[DataRequired()])
-    # driver = StringField("Driver", validators=[DataRequired()])
-    driver = SelectField(u"Driver")
-    # courier = StringField("Courier", validators=[DataRequired()])
-    courier = SelectField("Courier")
+    ], validators=[InputRequired()])
+    slip_no = StringField("Slip no", validators=[InputRequired()])
+    area = SelectField("Area", validators=[InputRequired()])
+    destination = StringField("Destination", validators=[InputRequired()])
+    odo_start = IntegerField("Odo start (Km)", validators=[InputRequired()])
+    odo_end = IntegerField("Odo end (Km)", validators=[InputRequired()])
+    cbm = FloatField("Cbm", validators=[InputRequired()])
+    qty = IntegerField("Qty", validators=[InputRequired()])
+    drops = IntegerField("Drops", validators=[InputRequired()])
+    rate = FloatField("Charge Rate", validators=[InputRequired()])
+    plate_no = StringField("Plate no", validators=[InputRequired()])
+    driver = SelectField("Driver", validators=[InputRequired()] )
+    courier = SelectField("Courier", validators=[InputRequired()])
     submit = SubmitField("Submit")
 
 
@@ -59,19 +55,19 @@ class DispatchTableFilterForm(FlaskForm):
 
 
 class MaintenanceForm(FlaskForm):
-    date = DateField("Date", validators=[DataRequired()])
-    plate_no = StringField("Plate no", validators=[DataRequired()])
+    date = DateField("Date", validators=[InputRequired()])
+    plate_no = StringField("Plate no", validators=[InputRequired()])
     type = SelectField("Type", choices=[
         "Repair",
         "Service",
         "Repair and service",
         "Tool/s",
         "Others"
-    ])
-    comment = StringField("Expenses detail", validators=[DataRequired()])
-    pyesa_amt = FloatField("Pyesa amt")
-    tools_amt = FloatField("Tools amt")
-    service_charge = FloatField("Service charge")
+    ], validators=[InputRequired()])
+    comment = StringField("Expenses detail", validators=[InputRequired()])
+    pyesa_amt = FloatField("Pyesa amt", validators=[InputRequired()])
+    tools_amt = FloatField("Tools amt", validators=[InputRequired()])
+    service_charge = FloatField("Service charge", validators=[InputRequired()])
     submit = SubmitField("Add record")
 
 
@@ -82,12 +78,12 @@ class MaintenanceFilterForm(FlaskForm):
 
 
 class AdminExpenseForm(FlaskForm):
-    date = DateField("Date", validators=[DataRequired()])
-    agency = StringField("Agency (ex. BIR, City Hall etc)")
-    office = StringField("Office (ex. Treasurer's office etc)")
-    frequency = StringField("Frequency (ex. Monthly, Yearly etc)")
-    description = StringField("Description", validators=[DataRequired()])
-    amount = FloatField("Amount")
+    date = DateField("Date", validators=[InputRequired()])
+    agency = StringField("Agency (ex. BIR, City Hall etc)", validators=[InputRequired()])
+    office = StringField("Office (ex. Treasurer's office etc)", validators=[InputRequired()])
+    frequency = StringField("Frequency (ex. Monthly, Yearly etc)", validators=[InputRequired()])
+    description = StringField("Description", validators=[InputRequired()])
+    amount = FloatField("Amount", validators=[InputRequired()])
     submit = SubmitField("Add record")
 
 
@@ -99,100 +95,96 @@ class AdminFilterForm(FlaskForm):
 
 class EmployeeEntryForm(FlaskForm):
     # personal info
-    first_name = StringField("First name", validators=[DataRequired()])
-    middle_name = StringField("Middle name", validators=[DataRequired()])
-    last_name = StringField("Last name", validators=[DataRequired()])
+    first_name = StringField("First name", validators=[InputRequired()])
+    middle_name = StringField("Middle name", validators=[InputRequired()])
+    last_name = StringField("Last name", validators=[InputRequired()])
     extn_name = SelectField("Extension.", choices=["", "Jr.", "Sr.", "I", "II", "III", "IV", "V"])
-    birthday = DateField("Birthday", validators=[DataRequired()])
-    gender = StringField("Gender", validators=[DataRequired()])
+    birthday = DateField("Birthday", validators=[InputRequired()])
+    gender = StringField("Gender", validators=[InputRequired()])
     # address
-    address = TextAreaField("Address", validators=[DataRequired()])
-    contact_no = StringField("Cellphone no.", validators=[DataRequired()])
-    facebook = StringField("Facebook account")
+    address = TextAreaField("Address", validators=[InputRequired()])
+    contact_no = StringField("Cellphone no.", validators=[InputRequired()])
+    facebook = StringField("Facebook account", validators=[InputRequired()])
     submit = SubmitField("Add Employee")
 
 
 class EmployeeAdminEditForm(FlaskForm):
     # company related info
-    employee_id = StringField("ID")
-    date_hired = DateField("Date hired")
+    employee_id = StringField("ID", validators=[InputRequired()])
+    date_hired = DateField("Date hired", validators=[InputRequired()])
     employment_status = SelectField(
         "Status",
-        choices=["Contractual", "Provisional", "Regular", "Awol", "Resigned"]
+        choices=["Contractual", "Provisional", "Regular", "Awol", "Resigned"], validators=[InputRequired()]
     )
-    position = StringField("Position")
-    rank = StringField("Rank")
+    position = StringField("Position", validators=[InputRequired()])
+    rank = StringField("Rank", validators=[InputRequired()])
     # benefits ids
-    sss_no = StringField("SSS no")
-    philhealth_no = StringField("PhilHealth no")
-    pag_ibig_no = StringField("Pag-ibig no")
+    sss_no = StringField("SSS no", validators=[InputRequired()])
+    philhealth_no = StringField("PhilHealth no", validators=[InputRequired()])
+    pag_ibig_no = StringField("Pag-ibig no", validators=[InputRequired()])
     # benefits premium
-    sss_prem = FloatField("SSS premium")
-    philhealth_prem = FloatField("PhilHealth premium")
-    pag_ibig_prem = FloatField("Pag-Ibig premium")
+    sss_prem = FloatField("SSS premium", validators=[InputRequired()])
+    philhealth_prem = FloatField("PhilHealth premium", validators=[InputRequired()])
+    pag_ibig_prem = FloatField("Pag-Ibig premium", validators=[InputRequired()])
     # compensation
-    basic = FloatField("Basic premium")
-    allowance1 = FloatField("Allowance1")
-    allowance2 = FloatField("Allowance2")
-    allowance3 = FloatField("Allowance3")
+    basic = FloatField("Basic premium", validators=[InputRequired()])
+    allowance1 = FloatField("Allowance1", validators=[InputRequired()])
+    allowance2 = FloatField("Allowance2", validators=[InputRequired()])
+    allowance3 = FloatField("Allowance3", validators=[InputRequired()])
     submit = SubmitField("Add")
 
 
 class PayStripForm(FlaskForm):
-    start_date = DateField("From")
-    end_date = DateField("To")
-    employee_name = StringField("Name")
-    employee_id = StringField("ID")
+    start_date = DateField("From", validators=[InputRequired()])
+    end_date = DateField("To", validators=[InputRequired()])
+    employee_name = StringField("Name", validators=[InputRequired()])
+    employee_id = StringField("ID", validators=[InputRequired()])
     # attendance
-    normal = IntegerField("Normal")
-    reg_hol = IntegerField("Regular holiday")
-    no_sp_hol = IntegerField("Non working special holiday")
-    wk_sp_hol = IntegerField("Working special holiday")
-    rd = IntegerField("Rest day")
+    normal = IntegerField("Normal", validators=[InputRequired()])
+    reg_hol = IntegerField("Regular holiday", validators=[InputRequired()])
+    no_sp_hol = IntegerField("Non working special holiday", validators=[InputRequired()])
+    wk_sp_hol = IntegerField("Working special holiday", validators=[InputRequired()])
+    rd = IntegerField("Rest day", validators=[InputRequired()])
     # pay
-    basic = FloatField("Basic")
-    allowance1 = FloatField("Allowance1")
-    allowance2 = FloatField("Allowance2")
-    allowance3 = FloatField("Allowance3")
+    basic = FloatField("Basic", validators=[InputRequired()])
+    allowance1 = FloatField("Allowance1", validators=[InputRequired()])
+    allowance2 = FloatField("Allowance2", validators=[InputRequired()])
+    allowance3 = FloatField("Allowance3", validators=[InputRequired()])
     # deduction
-    cash_adv = FloatField("Cash advance")
-    ca_date = DateField("C.A. date")
-    ca_deduction = FloatField("C.A. deduction")
-    ca_remaining = FloatField("C.A. remaining")
-    sss = FloatField("SSS")
-    philhealth = FloatField("PhilHealth")
-    pag_ibig = FloatField("Pag-Ibig")
-    life_insurance = FloatField("Life insurance")
-    income_tax = FloatField("Income tax")
+    cash_adv = FloatField("Cash advance", validators=[InputRequired()])
+    ca_date = DateField("C.A. date", validators=[InputRequired()])
+    ca_deduction = FloatField("C.A. deduction", validators=[InputRequired()])
+    ca_remaining = FloatField("C.A. remaining", validators=[InputRequired()])
+    sss = FloatField("SSS", validators=[InputRequired()])
+    philhealth = FloatField("PhilHealth", validators=[InputRequired()])
+    pag_ibig = FloatField("Pag-Ibig", validators=[InputRequired()])
+    life_insurance = FloatField("Life insurance", validators=[InputRequired()])
+    income_tax = FloatField("Income tax", validators=[InputRequired()])
     # summary
-    total_pay = FloatField("Gross pay")
     submit = SubmitField("Submit")
 
 
 class TariffForm(FlaskForm):
     route = SelectField(
         'Route',
-        choices=['Davao City', 'Gensan', 'Malita', 'Cotabato', 'Asuncion', 'Mati', 'CDO via Buda', 'CDO via Butuan'])
-    area = StringField('Area')
-    km = FloatField('Km')
-    vehicle = StringField('Vehicle type')
+        choices=['Davao City', 'Gensan', 'Malita', 'Cotabato', 'Asuncion', 'Mati', 'CDO via Buda', 'CDO via Butuan'], validators=[InputRequired()])
+    area = StringField('Area', validators=[InputRequired()])
+    km = FloatField('Km', validators=[InputRequired()])
+    vehicle = StringField('Vehicle type', validators=[InputRequired()])
     cbm = SelectField(
         'Cbm',
-        choices=[3, 5, 8, 15, 25])
-    rate = FloatField('Rate')
-    update = DateField('LBC tariff released date')
+        choices=[3, 5, 8, 15, 25], validators=[InputRequired()])
+    rate = FloatField('Rate', validators=[InputRequired()])
+    update = DateField('LBC tariff released date', validators=[InputRequired()])
     submit = SubmitField("Submit")
 
 
 class CashAdvForm(FlaskForm):
-    name = SelectField("Name")
-    date = DateField("C.A. Date")
-    amount = FloatField("Amount")
-    deduction = FloatField("Deduction")
+    name = SelectField("Name", validators=[InputRequired()])
+    date = DateField("C.A. Date", validators=[InputRequired()])
+    amount = FloatField("Amount", validators=[InputRequired()])
+    deduction = FloatField("Deduction", validators=[InputRequired()])
 
-
-class TransactionForm(FlaskForm):
-    pass
 
 
 

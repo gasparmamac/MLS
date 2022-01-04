@@ -1,28 +1,228 @@
 {% extends 'bootstrap/base.html' %}
 {% import "bootstrap/wtf.html" as wtf %}
-{% block title %}Transaction{% endblock %}
+{% block styles %}
+    {{super()}}
+    <!-- Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" type="text/css">
+
+    <!--custom css-->
+    <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" type="text/css">
+
+{% endblock %}
+{% block title %}{{inv_no}}{% endblock %}
 
 {% block content %}
+    <div class="container mb-5 py-5">
+        <section id="header">
+            <h3>MAMAC LOGISTICS SERVICES</h3>
+            <p class="text-muted">Blk 3, Lot 9, Lulu Village, Brgy. R.Castillo Agdao District</p>
+            <p class="text-muted">Cellphone#: 0948-6877234 / 0923-6003604 /0965-2965333 | Tel#: (082)228-5232</p>
+        </section>
 
-    {% include '_header.html' %}
-    <!--    Dispatch table-->
-    <div class="container my-5">
-        <form class="row g-2">
-<!--            iterate per employee-->
-            {% for emp in emp_list:%}
-                <div class="col-md-6">
-                    <label for="inputAdjAmount" class="form-label">emp</label>
-                    <input type="amount" class="form-control" id="inputAdjAmount" placeholder="adjustment amount">
+
+        <section id="title">
+            <hr>
+            <h3 class="text-center">Transaction Report</h3>
+            <hr>
+            <p class="ms-auto">Transaction date: <span class="fw-bold">{{ trans_date }}</span></p>
+        </section>
+        <br>
+        <section id="Payroll">
+            <p><span class="fw-bold">Payroll summary</span> </p>
+            {% if pay_cnt > 0:%}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">From</th>
+                        <th scope="col">To</th>
+                        <th scope="col">Normal(x1)</th>
+                        <th scope="col">Reg_Hol(x2)</th>
+                        <th scope="col">No_Sp_Hol(x1.3)</th>
+                        <th scope="col">Rd(x1.25)</th>
+                        <th scope="col">Equiv_wd</th>
+                        <th scope="col">Basic</th>
+                        <th scope="col">SSS</th>
+                        <th scope="col">CA deduct.</th>
+                        <th scope="col">Pay adj</th>
+                        <th scope="col">Pay adj reason</th>
+                        <th scope="col">Gross Pay</th>
+                        <th scope="col">Total deduction</th>
+                        <th scope="col">Net Pay</th>
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in paystrip_df.itertuples(): %}
+                    <tr>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[7] }}</td>
+                        <td>{{ row[8] }}</td>
+                        <td>{{ row[9] }}</td>
+                        <td>{{ row[11] }}</td>
+                        <td>{{ row[12] }}</td>
+                        <td>{{ row[13] }}</td>
+                        <td>{{ row[23] }}</td>
+                        <td>{{ row[21] }}</td>
+                        <td>{{ row[17] }}</td>
+                        <td>{{ row[18] }}</td>
+                        <td>{{ row[28] }}</td>
+                        <td>{{ row[29] }}</td>
+                        <td>{{ row[30] }}</td>
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% else: %}
+        <hr>
+        <p class="text-center"> ---------- Payroll settled ----------</p>
+        <hr>
+        {% endif %}
+        <br>
+
+
+        <section id="Maintenance">
+            <p><span class="fw-bold">Maintenance Expenses</span> </p>
+            {% if maint_cnt > 0: %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th scope="col">Maintenance date</th>
+                        <th scope="col">Plate no</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Details</th>
+                        <th scope="col">Spare parts amt</th>
+                        <th scope="col">Tools amount</th>
+                        <th scope="col">Service charge</th>
+                        <th scope="col">Total exp</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in maint_df.itertuples(): %}
+                    <tr>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[6] }}</td>
+                        <td>{{ row[7] }}</td>
+                        <td>{{ row[8] }}</td>
+                        <td>{{ row[9] }}</td>
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% else: %}
+        <hr>
+        <p class="text-center"> ---------- Maintenance settled ----------</p>
+        <hr>
+        {% endif %}
+        <br>
+
+
+        <section id="Admin Expenses">
+            <p><span class="fw-bold">Admin Expenses</span> </p>
+            {% if admin_cnt > 0:%}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th scope="col">Expense date</th>
+                        <th scope="col">Agency</th>
+                        <th scope="col">Office</th>
+                        <th scope="col">Frequency</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in admin_df.itertuples(): %}
+                    <tr>
+                        <td>{{ row[2] }}</td>
+                        <td>{{ row[3] }}</td>
+                        <td>{{ row[4] }}</td>
+                        <td>{{ row[5] }}</td>
+                        <td>{{ row[6] }}</td>
+                        <td>{{ row[7] }}</td>
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% else: %}
+        <hr>
+        <p class="text-center"> ----------Admin expenses settled ----------</p>
+        <hr>
+        {% endif %}
+        <br>
+
+
+        <section id="summary">
+            <p><span class="fw-bold">Summary</span> </p>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th scope="col">Payroll ttl</th>
+                        <th scope="col">Maintenance ttl</th>
+                        <th scope="col">Admin ttl</th>
+                        <th scope="col">Grand ttl</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>{{ payroll_ttl }}</td>
+                        <td>{{ maint_ttl }}</td>
+                        <td>{{ admin_ttl }}</td>
+                        <td>{{ grand_ttl }}</td>
+
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <p>Amount in words:</p><h5>{{amt_in_words}}</h5>
+        <br>
+        <br>
+
+        <form action="{{ url_for('transaction')}}" method="post" >
+            <div class="hstack allign-center gap-3">
+                {% if ((pay_cnt == 0) and (maint_cnt == 0) and (admin_cnt == 0)): %}
+                    <button type="submit" value="clicked" name="save_button" class="btn btn-primary" disabled>Save</button>
+                {% else: %}
+                    <button type="submit" value="clicked" name="save_button" class="btn btn-primary" >Save</button>
+                {% endif %}
+                <div class="dropdown">
+                      <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                        Go to
+                      </button>
+                      <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                        <li><a class="dropdown-item" href="{{ url_for('payroll') }}">Payroll</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('maintenance') }}">Maintenance</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin')}}">Admin expenses</a></li>
+                      </ul>
                 </div>
-             <div class="col-md-6">
-<!--                    <label for="input" class="form-label">Adj. amount</label>-->
-                    <input type="reason" class="form-control" id="inputAdjReason" placeholder="adjustment reason">
-                </div>
-            {% endfor %}
+            </div>
+        </form >
 
-
-        </form>
+        <br>
+        <br>
+        <br>
+        <br>
+        <footer class="text-center text-muted">This a system generated report. For any concern, kindly contact us or email to: <em>gaspar.mamac@gmail.com</em></footer>
     </div>
+
     <!--content end-->
     {% include '_footer.html' %}
 
