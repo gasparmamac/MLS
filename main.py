@@ -27,7 +27,7 @@ import pandas as pd
 pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.urandom(12)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
 
@@ -292,6 +292,7 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
+    print(os.urandom(12))
     return render_template("_index.html")
 
 
