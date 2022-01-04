@@ -197,6 +197,7 @@
         <br>
 
         <form action="{{ url_for('transaction')}}" method="post" >
+            {{ form.csrf_token }}
             <div class="hstack allign-center gap-3">
                 {% if ((pay_cnt == 0) and (maint_cnt == 0) and (admin_cnt == 0)): %}
                     <button type="submit" value="clicked" name="save_button" class="btn btn-primary" disabled>Save</button>

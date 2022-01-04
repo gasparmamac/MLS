@@ -30,8 +30,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(12)
 Bootstrap(app)
 
+
 # Connect to database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -290,7 +292,6 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-
     return render_template("_index.html")
 
 
@@ -1418,6 +1419,8 @@ def transaction():
 # todo: 5 app authorization
 # todo: 6 forgot password routine
 # todo: 7 home page
+# todo: 8 tariff rate on dispatch table
+
 
 
 if __name__ == "__main__":
