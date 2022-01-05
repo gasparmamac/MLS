@@ -27,7 +27,8 @@ import pandas as pd
 pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+SECRET_KEY = os.urandom(32)
+app.config['SECRET_KEY'] = SECRET_KEY
 Bootstrap(app)
 
 # Connect to database
@@ -643,7 +644,7 @@ def edit_admin(admin_id):
         admin_to_edit.amount = edit_form.amount.data
         admin_to_edit.encoded_by = current_user.first_name.title()
         db.session.commit()
-        return redirect(url_for('employee'))
+        return redirect(url_for('admin'))
     return render_template("admin_input.html", form=edit_form)
 
 
