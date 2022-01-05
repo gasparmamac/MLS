@@ -27,8 +27,7 @@ import pandas as pd
 pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
-# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SECRET_KEY'] = 'a556eec9804e46bb23a540d5'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
 # Connect to database
