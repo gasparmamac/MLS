@@ -30,7 +30,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
-
 # Connect to database
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///lbc_dispatch.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
@@ -292,7 +291,6 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    print(os.urandom(12))
     return render_template("_index.html")
 
 
