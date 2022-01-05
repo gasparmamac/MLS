@@ -1457,5 +1457,5 @@ def add_transaction(trans_date):
 # todo: 8 tariff rate on dispatch table
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
 
