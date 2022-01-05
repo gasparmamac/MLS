@@ -1427,26 +1427,6 @@ def add_transaction(trans_date):
     return redirect(url_for('transaction'))
 
 
-
-
-
-
-
-
-
-
-
-
-
-        # elif request.form.get('cancel_button') == 'clicked':
-        #     return redirect(url_for('payroll'))
-#
-
-
-
-
-
-
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
 # todo: 3. Deduction routine (C.A, SSS)
@@ -1455,6 +1435,7 @@ def add_transaction(trans_date):
 # todo: 6 forgot password routine
 # todo: 7 home page
 # todo: 8 tariff rate on dispatch table
+
 
 if __name__ == "__main__":
     app.run()
