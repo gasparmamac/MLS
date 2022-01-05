@@ -27,7 +27,8 @@ import pandas as pd
 pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SECRET_KEY'] = 'a556eec9804e46bb23a540d5'
 Bootstrap(app)
 
 # Connect to database
@@ -264,7 +265,7 @@ class Trasaction(db.Model, UserMixin):
 
 
 # Run only once
-# db.create_all()
+db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -929,11 +930,11 @@ def add_payroll():
             employee_name=emp.full_name,
             employee_id=emp.employee_id,
             # attendance
-            normal=normal,
-            reg_hol=reg_hol,
-            no_sp_hol=no_sp_hol,
-            wk_sp_hol=wk_sp_hol,
-            rd=rd,
+            normal=int(normal),
+            reg_hol=int(reg_hol),
+            no_sp_hol=int(no_sp_hol),
+            wk_sp_hol=int(wk_sp_hol),
+            rd=int(rd),
             equiv_wd=equiv_wd,
             # pay
             basic=emp.basic,
@@ -1297,10 +1298,6 @@ def transaction():
     # step1: count each unsettle items
     # step2: create df for each table that has unsettled items
     # step3: display result
-    # step4: with save, update date settled on paystrip, maint and admin tables
-    # step5: update trasaction table
-
-    # initializing variables
 
     # step0
     with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
@@ -1352,64 +1349,103 @@ def transaction():
     grand_ttl = payroll_ttl + maint_ttl + admin_ttl
     amt_in_words = num2words(grand_ttl).title() + ' pesos'
 
-    # step4
-    if request.method == "POST":
-        if request.form.get('save_button') == 'clicked':
-            # update paystrip settled date
-            if not df1[df1.date_settled == "-"].empty:
-                paystrip_ids = paystrip_grp.id.tolist()
-                for paystrip_id in paystrip_ids:
-                    paystrip_to_edit = PayStripTable.query.get(paystrip_id)
-                    paystrip_to_edit.date_settled = trans_date
-                    db.session.commit()
-            else:
-                paystrip_ids = []
-
-            # update maintenance settled date
-            if not df2[df2.date_settled == "-"].empty:
-                maint_ids = maint_grp.id.tolist()
-                for maint_id in maint_ids:
-                    maint_to_edit = MaintenanceTable.query.get(maint_id)
-                    maint_to_edit.date_settled = trans_date
-                    db.session.commit()
-            else:
-                maint_ids = []
-
-            # update admin settled date
-            if not df3[df3.date_settled == "-"].empty:
-                admin_ids = admin_grp.id.tolist()
-                for admin_id in admin_ids:
-                    admin_to_edit = AdminExpenseTable.query.get(admin_id)
-                    admin_to_edit.date_settled = trans_date
-                    db.session.commit()
-            else:
-                admin_ids = []
-
-            # step5
-            new_trans = Trasaction(
-                trans_date=trans_date,
-                paystrip_ids=str(paystrip_ids),
-                maintenance_ids=str(maint_ids),
-                admin_ids=str(admin_ids),
-                by='Gaspar',
-                on=datetime.today().strftime('%Y-%m-%d')
-            )
-            db.session.add(new_trans)
-            db.session.commit()
-
-            return redirect(url_for('transaction'))
-
-        # elif request.form.get('cancel_button') == 'clicked':
-        #     return redirect(url_for('payroll'))
-
-        else:
-            return redirect(url_for('transaction'))
-
     return render_template('transaction.html',
                            pay_cnt=pay_cnt, maint_cnt=maint_cnt, admin_cnt=admin_cnt,
                            paystrip_df=paystrip_grp, maint_df=maint_grp, admin_df=admin_grp,
                            payroll_ttl=payroll_ttl, maint_ttl=maint_ttl, admin_ttl=admin_ttl, grand_ttl=grand_ttl,
                            trans_date=trans_date, amt_in_words=amt_in_words)
+
+
+@app.route("/add_transaction/<trans_date>", methods=['Post', 'Get'])
+def add_transaction(trans_date):
+    # step0: get fresh copy of paystrip, maintenance, admin
+    # step1: update date settled on paystrip, maint and admin tables
+    # step2: update trasaction table
+
+    # step0:
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df1 = pd.read_sql_table(
+            table_name="pay_strip",
+            con=cnx,
+        )
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df2 = pd.read_sql_table(
+            table_name="maintenance",
+            con=cnx,
+        )
+    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+        df3 = pd.read_sql_table(
+            table_name="admin",
+            con=cnx,
+        )
+
+    # step1
+    # update paystrip settled date
+    if not df1[df1.date_settled == "-"].empty:
+        paystrip_grp = df1.groupby('date_settled').get_group('-')
+        paystrip_ids = paystrip_grp.id.tolist()
+        for paystrip_id in paystrip_ids:
+            paystrip_to_edit = PayStripTable.query.get(paystrip_id)
+            paystrip_to_edit.date_settled = trans_date
+            db.session.commit()
+    else:
+        paystrip_ids = []
+
+    # update maintenance settled date
+    if not df2[df2.date_settled == "-"].empty:
+        maint_grp = df2.groupby('date_settled').get_group('-')
+        maint_ids = maint_grp.id.tolist()
+        for maint_id in maint_ids:
+            maint_to_edit = MaintenanceTable.query.get(maint_id)
+            maint_to_edit.date_settled = trans_date
+            db.session.commit()
+    else:
+        maint_ids = []
+
+    # update admin settled date
+    if not df3[df3.date_settled == "-"].empty:
+        admin_grp = df3.groupby('date_settled').get_group('-')
+        admin_ids = admin_grp.id.tolist()
+        for admin_id in admin_ids:
+            admin_to_edit = AdminExpenseTable.query.get(admin_id)
+            admin_to_edit.date_settled = trans_date
+            db.session.commit()
+    else: admin_ids = []
+
+    # step5
+    new_trans = Trasaction(
+        trans_date=trans_date,
+        paystrip_ids=str(paystrip_ids),
+        maintenance_ids=str(maint_ids),
+        admin_ids=str(admin_ids),
+        by='Gaspar',
+        on=datetime.today().strftime('%Y-%m-%d')
+    )
+    db.session.add(new_trans)
+    db.session.commit()
+
+    return redirect(url_for('transaction'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # elif request.form.get('cancel_button') == 'clicked':
+        #     return redirect(url_for('payroll'))
+#
+
+
+
+
+
 
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
@@ -1420,8 +1456,6 @@ def transaction():
 # todo: 7 home page
 # todo: 8 tariff rate on dispatch table
 
-
-
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
 
