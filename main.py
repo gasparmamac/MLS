@@ -265,7 +265,7 @@ class Trasaction(db.Model, UserMixin):
 
 
 # Run only once
-db.create_all()
+# db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
