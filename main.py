@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, url_for, abort, flash, reque
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, \
     current_user, logout_user
+from flask_wtf import csrf, CSRFProtect
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -34,6 +35,8 @@ Bootstrap(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
+csrf.init_app(app)
 
 
 # Tables------------------------------------------------------------------
