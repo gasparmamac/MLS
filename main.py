@@ -27,8 +27,7 @@ import pandas as pd
 pd.options.display.float_format = '{:,.1f}'.format
 
 app = Flask(__name__)
-SECRET_KEY = os.urandom(32)
-app.config['SECRET_KEY'] = SECRET_KEY
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
 # Connect to database
