@@ -304,7 +304,7 @@ def home():
         uri1 = uri1.replace("postgres://", "postgresql://", 1)
     uri = os.environ.get('DATABASE_URL')
     key = os.getenv('SECRET_KEY')
-    return render_template("_index.html", uri=uri, key=key)
+    return render_template("_index.html", uri=uri1, key=key)
 
 
 @app.route("/register", methods=["Get", "Post"])
