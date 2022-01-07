@@ -34,7 +34,7 @@ Bootstrap(app)
 # Connect to database
 
 # heroku posgres-alchemy issue sol'n'( 'SQLAlchemy 1.4.x has removed support for the postgres:// URI scheme')
-uri = os.environ.get('DATABASE_URL', 'sqlite:///mls_dispatch.db')
+uri = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
 if uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
