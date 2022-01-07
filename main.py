@@ -299,7 +299,7 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    return render_template("_index.html")
+    return render_template("_index.html", uri=uri)
 
 
 @app.route("/register", methods=["Get", "Post"])
