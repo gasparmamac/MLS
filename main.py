@@ -34,7 +34,7 @@ Bootstrap(app)
 # Connect to database
 
 # heroku posgres-alchemy issue sol'n'( 'SQLAlchemy 1.4.x has removed support for the postgres:// URI scheme')
-uri = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
+uri = os.environ.get('DATABASE_URL', 'sqlite:///mls_dispatch.db')
 if uri.startswith("postgres://"):
     uri = uri.replace("postgres://", "postgresql://", 1)
 
@@ -379,7 +379,7 @@ def dispatch():
     form = DispatchTableFilterForm()
 
     # Get all dispatch data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="dispatch", con=cnx)
 
     # Dispatch data
@@ -515,7 +515,7 @@ def delete_dispatch(dispatch_id):
 def maintenance():
     form = MaintenanceFilterForm()
     # Get all maintenance data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="maintenance", con=cnx)
 
     sorted_df = df.head(n=10).sort_values("date", ascending=False)
@@ -594,7 +594,7 @@ def delete_maintenance(maintenance_id):
 def admin():
     form = AdminFilterForm()
     # Get all admin expenses data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="admin", con=cnx)
 
     sorted_df = df.head(n=10).sort_values("date", ascending=False)
@@ -667,7 +667,7 @@ def delete_admin(admin_id):
 @app.route("/employee_list", methods=["Get", "Post"])
 def employees():
     # Get all employees data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="employee", con=cnx)
     return render_template("employees_data.html", df=df)
 
@@ -827,7 +827,7 @@ def employee_delete(employee_index):
 # Payroll---------------------------------------------------------------
 @app.route("/payroll", methods=["Get", "Post"])
 def payroll():
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         raw = pd.read_sql_table(
             table_name="dispatch",
             con=cnx, index_col='dispatch_date',
@@ -846,7 +846,7 @@ def payroll():
         paid = True
         df = raw.head(n=25).sort_values("dispatch_date", ascending=False)
 
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
         pay_strip_df = strip_df.head(n=25).sort_values("gen_date", ascending=False)
 
@@ -861,7 +861,7 @@ def add_payroll():
     # step3: create paystrip per column labels (or per employee)
 
     # step0
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         raw = pd.read_sql_table(
             table_name="dispatch",
             con=cnx, index_col='dispatch_date',
@@ -1001,7 +1001,7 @@ def delete_payroll(paystrip_id):
 @app.route("/tariff", methods=["Get", "Post"])
 def tariff():
     # get tariff data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="tariff", con=cnx)
     return render_template("tariff_data.html", df=df)
 
@@ -1011,7 +1011,7 @@ def add_tariff():
     form = TariffForm()
 
     # get tariff data from database
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="tariff", con=cnx)
 
     if form.validate_on_submit():
@@ -1072,13 +1072,13 @@ def delete_tariff(tariff_id):
 @app.route("/invoice", methods=["Get", "Post"])
 def invoice():
     # get dispatch table
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         disp_df = pd.read_sql_table(
             table_name="dispatch",
             con=cnx,
         )
     # get invoice table
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         inv_df = pd.read_sql_table(
             table_name="invoice",
             con=cnx,
@@ -1098,12 +1098,12 @@ def invoice():
 def add_invoice():
 
     # step0:
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         invoice_df = pd.read_sql_table(
             table_name="invoice",
             con=cnx,
         )
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         dispatch_df = pd.read_sql_table(
             table_name="dispatch",
             con=cnx,
@@ -1151,7 +1151,7 @@ def print_invoice(invoice_id):
     inv_date = date.today()
 
     # step2: get fresh copy of dispatch
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df = pd.read_sql_table(table_name="dispatch", con=cnx,)
 
     # step3: retrieve dispatch with the following ids]
@@ -1307,17 +1307,17 @@ def transaction():
     # step3: display result
 
     # step0
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df1 = pd.read_sql_table(
             table_name="pay_strip",
             con=cnx,
         )
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df2 = pd.read_sql_table(
             table_name="maintenance",
             con=cnx,
         )
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df3 = pd.read_sql_table(
             table_name="admin",
             con=cnx,
@@ -1370,17 +1370,17 @@ def add_transaction(trans_date):
     # step2: update trasaction table
 
     # step0:
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df1 = pd.read_sql_table(
             table_name="pay_strip",
             con=cnx,
         )
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df2 = pd.read_sql_table(
             table_name="maintenance",
             con=cnx,
         )
-    with create_engine('sqlite:///lbc_dispatch.db').connect() as cnx:
+    with create_engine(uri).connect() as cnx:
         df3 = pd.read_sql_table(
             table_name="admin",
             con=cnx,
