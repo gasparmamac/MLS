@@ -1155,128 +1155,130 @@ def print_invoice(invoice_id):
     amt_in_words = num2words(amount_due)
     in_words = amt_in_words.title() + ' pesos'
 
-    # using FPDF-------------------------------------------------------------------------------------------------
-    # create object
-    pdf = PDF('P', 'mm', 'A4')
-    # get total page numbers
-    pdf.alias_nb_pages()
-    # metadata
-    pdf.set_title(f'{inv_no}')
-    pdf.set_author('Gaspar Mamac')
-    # set auto page break
-    pdf.set_auto_page_break(auto=True, margin=15)
-    # add page
-    pdf.add_page()
-
-    # Company
-    pdf.set_font('helvetica', 'B', 12)
-    pdf.cell(0, 8, 'Mamac Logistics Services', ln=1, border=0)
-    # address
-    pdf.set_font('helvetica', '', 8)
-    pdf.set_text_color(169, 169, 169)
-    pdf.cell(0, 5, "Blk 3, Lot 9, Lulu Village, Brgy. R.Castillo Agdao District", ln=1, border=0)
-    pdf.cell(0, 5, "Cellphone#: 0948-6877234 / 0923-6003604 /0965-2965333 Tel#: (082)228-5232", ln=1, border=0)
-
-    # line break
-    pdf.set_font('helvetica', 'B', 12)
-    pdf.set_fill_color(169, 169, 169)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(0, 10, "BILLING STATEMENT", border=0, ln=1, align='C', fill=1)
-
-    # bill to
-    pdf.set_font('helvetica', '', 8)
-    pdf.set_text_color(0, 0, 0)
-    pdf.cell(15, 6, 'Bill to: ', ln=0, border=0)
-    # customer
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(115, 6, 'LBC Expres Inc.', ln=0, border=0)
-    # invoice no
-    pdf.set_font('helvetica', '', 8)
-    pdf.cell(20, 6, 'Invoice no: ', border=0)
-    # actual invoice#
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(25, 6, f'{inv_no}', ln=1, border=0)
-
-    pdf.set_font('helvetica', '', 8)
-    pdf.cell(15, 6, 'Address: ', ln=0, border=0)
-    pdf.cell(115, 6, "Km. 7, Lanang Davao City", ln=0, border=0)
-    pdf.cell(20, 6, "Invoice Date: ", ln=0, border=0)
-    pdf.cell(25, 6, f"{date.today()}", ln=1, border=0)
-
-    # line break
-    pdf.ln('20')
-
-    # dispatch from - to
-    pdf.cell(10, 6, "From: ", ln=0, border=0)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(25, 6, f"{print_this.dispatch_date.min()}", ln=0, border=0)
-    pdf.set_font('helvetica', '', 8)
-    pdf.cell(10, 6, "To: ", ln=0, border=0)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(25, 6, f"{print_this.dispatch_date.max()}", ln=1, border=0)
-
-    # table
-    header = ['Dispatch date', 'Slip no', 'Plate no', 'Area', 'Dropping point/s', 'Cbm', 'Qty', 'Drops', 'Rate']
-    # header
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(25, 6, 'Dispatch date',border=1)
-    pdf.cell(20, 6, 'Slip no', border=1)
-    pdf.cell(20, 6, 'Plate no', border=1)
-    pdf.cell(30, 6, 'Area', border=1)
-    pdf.cell(35, 6, 'Dropping point/s', border=1)
-    pdf.cell(12, 6, 'Cbm', border=1)
-    pdf.cell(12, 6, 'Qty', border=1)
-    pdf.cell(12, 6, 'Drop/s', border=1)
-    pdf.cell(25, 6, 'Amount', border=1, ln=1)
-
-    # data
-    pdf.set_font('helvetica', '', 8)
-    for row in print_this.itertuples():
-        pdf.cell(25, 6, row[2], border=1)
-        pdf.cell(20, 6, row[4], border=1)
-        pdf.cell(20, 6, row[16], border=1)
-        pdf.cell(30, 6, row[6], border=1)
-        pdf.cell(35, 6, row[7], border=1)
-        pdf.cell(12, 6, str(row[11]), border=1)
-        pdf.cell(12, 6, str(row[12]), border=1)
-        pdf.cell(12, 6, str(row[13]), border=1)
-        pdf.cell(25, 6, str(row[15]), border=1, ln=1)
-    # summary
-    pdf.cell(142, 6, border=1)
-    pdf.cell(24, 6, 'Gross', border=1)
-    pdf.cell(25, 6, str(gross_pay), border=1, ln=1)
-    pdf.cell(142, 6, border=1)
-    pdf.cell(24, 6, 'Less', border=1)
-    pdf.cell(25, 6, str(less), border=1, ln=1)
-    pdf.cell(142, 6, border=1)
-    pdf.cell(24, 6, 'Amount due', border=1)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(25, 6, str(amount_due), border=1, ln=1)
-
-    # amount in words
-    pdf.set_font('helvetica', '', 8)
-    pdf.cell(40, 6, 'Amount due in words:', ln=1)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(40, 6, in_words, ln=1)
-
-    # payable to
-    pdf.set_font('helvetica', 'I', 8)
-    pdf.cell(45, 6, 'Please make all checks payable to:', ln=0)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(40, 6, ' Mr. Gaspar Q. Mamac', ln=1)
-
-    # approve by (delete later)
-    pdf.ln(10)
-    pdf.set_font('helvetica', '', 8)
-    pdf.cell(130, 6, 'Checked and Approved by:', ln=0, border=0)
-    pdf.cell(35, 6, 'Received by:', ln=1, border=0)
-    pdf.set_font('helvetica', 'B', 8)
-    pdf.cell(130, 6, ' Mr. Nimrod Q. Mamac', ln=0)
-    pdf.cell(130, 6, '____________________', ln=1)
-    pdf.cell(130, 6, '', ln=0)
-    pdf.set_font('helvetica', 'I', 8)
-    pdf.cell(130, 1, '(Name/Signature/Date)', ln=1)
-    pdf.output(name=f"./invoices/{inv_no}.pdf")
+# later use
+#
+#     # using FPDF-------------------------------------------------------------------------------------------------
+#     # create object
+#     pdf = PDF('P', 'mm', 'A4')
+#     # get total page numbers
+#     pdf.alias_nb_pages()
+#     # metadata
+#     pdf.set_title(f'{inv_no}')
+#     pdf.set_author('Gaspar Mamac')
+#     # set auto page break
+#     pdf.set_auto_page_break(auto=True, margin=15)
+#     # add page
+#     pdf.add_page()
+#
+#     # Company
+#     pdf.set_font('helvetica', 'B', 12)
+#     pdf.cell(0, 8, 'Mamac Logistics Services', ln=1, border=0)
+#     # address
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.set_text_color(169, 169, 169)
+#     pdf.cell(0, 5, "Blk 3, Lot 9, Lulu Village, Brgy. R.Castillo Agdao District", ln=1, border=0)
+#     pdf.cell(0, 5, "Cellphone#: 0948-6877234 / 0923-6003604 /0965-2965333 Tel#: (082)228-5232", ln=1, border=0)
+#
+#     # line break
+#     pdf.set_font('helvetica', 'B', 12)
+#     pdf.set_fill_color(169, 169, 169)
+#     pdf.set_text_color(255, 255, 255)
+#     pdf.cell(0, 10, "BILLING STATEMENT", border=0, ln=1, align='C', fill=1)
+#
+#     # bill to
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.set_text_color(0, 0, 0)
+#     pdf.cell(15, 6, 'Bill to: ', ln=0, border=0)
+#     # customer
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(115, 6, 'LBC Expres Inc.', ln=0, border=0)
+#     # invoice no
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.cell(20, 6, 'Invoice no: ', border=0)
+#     # actual invoice#
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(25, 6, f'{inv_no}', ln=1, border=0)
+#
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.cell(15, 6, 'Address: ', ln=0, border=0)
+#     pdf.cell(115, 6, "Km. 7, Lanang Davao City", ln=0, border=0)
+#     pdf.cell(20, 6, "Invoice Date: ", ln=0, border=0)
+#     pdf.cell(25, 6, f"{date.today()}", ln=1, border=0)
+#
+#     # line break
+#     pdf.ln('20')
+#
+#     # dispatch from - to
+#     pdf.cell(10, 6, "From: ", ln=0, border=0)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(25, 6, f"{print_this.dispatch_date.min()}", ln=0, border=0)
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.cell(10, 6, "To: ", ln=0, border=0)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(25, 6, f"{print_this.dispatch_date.max()}", ln=1, border=0)
+#
+#     # table
+#     header = ['Dispatch date', 'Slip no', 'Plate no', 'Area', 'Dropping point/s', 'Cbm', 'Qty', 'Drops', 'Rate']
+#     # header
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(25, 6, 'Dispatch date',border=1)
+#     pdf.cell(20, 6, 'Slip no', border=1)
+#     pdf.cell(20, 6, 'Plate no', border=1)
+#     pdf.cell(30, 6, 'Area', border=1)
+#     pdf.cell(35, 6, 'Dropping point/s', border=1)
+#     pdf.cell(12, 6, 'Cbm', border=1)
+#     pdf.cell(12, 6, 'Qty', border=1)
+#     pdf.cell(12, 6, 'Drop/s', border=1)
+#     pdf.cell(25, 6, 'Amount', border=1, ln=1)
+#
+#     # data
+#     pdf.set_font('helvetica', '', 8)
+#     for row in print_this.itertuples():
+#         pdf.cell(25, 6, row[2], border=1)
+#         pdf.cell(20, 6, row[4], border=1)
+#         pdf.cell(20, 6, row[16], border=1)
+#         pdf.cell(30, 6, row[6], border=1)
+#         pdf.cell(35, 6, row[7], border=1)
+#         pdf.cell(12, 6, str(row[11]), border=1)
+#         pdf.cell(12, 6, str(row[12]), border=1)
+#         pdf.cell(12, 6, str(row[13]), border=1)
+#         pdf.cell(25, 6, str(row[15]), border=1, ln=1)
+#     # summary
+#     pdf.cell(142, 6, border=1)
+#     pdf.cell(24, 6, 'Gross', border=1)
+#     pdf.cell(25, 6, str(gross_pay), border=1, ln=1)
+#     pdf.cell(142, 6, border=1)
+#     pdf.cell(24, 6, 'Less', border=1)
+#     pdf.cell(25, 6, str(less), border=1, ln=1)
+#     pdf.cell(142, 6, border=1)
+#     pdf.cell(24, 6, 'Amount due', border=1)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(25, 6, str(amount_due), border=1, ln=1)
+#
+#     # amount in words
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.cell(40, 6, 'Amount due in words:', ln=1)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(40, 6, in_words, ln=1)
+#
+#     # payable to
+#     pdf.set_font('helvetica', 'I', 8)
+#     pdf.cell(45, 6, 'Please make all checks payable to:', ln=0)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(40, 6, ' Mr. Gaspar Q. Mamac', ln=1)
+#
+#     # approve by (delete later)
+#     pdf.ln(10)
+#     pdf.set_font('helvetica', '', 8)
+#     pdf.cell(130, 6, 'Checked and Approved by:', ln=0, border=0)
+#     pdf.cell(35, 6, 'Received by:', ln=1, border=0)
+#     pdf.set_font('helvetica', 'B', 8)
+#     pdf.cell(130, 6, ' Mr. Nimrod Q. Mamac', ln=0)
+#     pdf.cell(130, 6, '____________________', ln=1)
+#     pdf.cell(130, 6, '', ln=0)
+#     pdf.set_font('helvetica', 'I', 8)
+#     pdf.cell(130, 1, '(Name/Signature/Date)', ln=1)
+#     pdf.output(name=f"./invoices/{inv_no}.pdf")
 
     # attached pdf invoice to email
     # my_email = "mamaclogisticsservices441@gmail.com"
