@@ -236,7 +236,7 @@ class Tariff(db.Model, UserMixin):
     rate = db.Column(db.Float(precision=1))
     update = db.Column(db.String(50))
     encoded_on = db.Column(db.String(50))
-    encoded_by = db.Column(db.String(10))
+    encoded_by = db.Column(db.String(50))
 
 
 class Invoice(db.Model, UserMixin):
