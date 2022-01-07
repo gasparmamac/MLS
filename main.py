@@ -1010,10 +1010,6 @@ def tariff():
 def add_tariff():
     form = TariffForm()
 
-    # get tariff data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="tariff", con=cnx)
-
     if form.validate_on_submit():
         new_tariff = Tariff(
             route=form.route.data.title(),
@@ -1029,7 +1025,7 @@ def add_tariff():
         db.session.add(new_tariff)
         db.session.commit()
         return redirect(url_for('tariff'))
-    return render_template('tariff_input.html', form=form, df=df)
+    return render_template('tariff_input.html', form=form)
 
 
 @app.route("/edit_tariff/<int:tariff_id>", methods=["Get", "Post"])
