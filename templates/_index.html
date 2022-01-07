@@ -8,8 +8,6 @@
     <div class="container">
         <div class="row align-text-center">
             <div class="col">
-                 <h3>URI:{{uri}}</h3>
-                <h3>KEY: {{key}}</h3>
                 {% if current_user.is_authenticated %}
                     <h1>This is your homepage {{ current_user.first_name }}</h1>
                 {% else %}

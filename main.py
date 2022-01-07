@@ -272,7 +272,7 @@ class Trasaction(db.Model, UserMixin):
 
 
 # Run only once
-# db.create_all()
+db.create_all()
 
 
 # ------------------------------------------Login-logout setup and config---------------------------------------------
@@ -299,12 +299,7 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    uri1 = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
-    if uri1.startswith("postgres://"):
-        uri1 = uri1.replace("postgres://", "postgresql://", 1)
-    uri = os.environ.get('DATABASE_URL')
-    key = os.getenv('SECRET_KEY')
-    return render_template("_index.html", uri=uri1, key=key)
+    return render_template("_index.html")
 
 
 @app.route("/register", methods=["Get", "Post"])
