@@ -299,10 +299,10 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    uri = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
-    if uri.startswith("postgres://"):
-        uri = uri.replace("postgres://", "postgresql://", 1)
-
+    uri1 = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
+    if uri1.startswith("postgres://"):
+        uri1 = uri1.replace("postgres://", "postgresql://", 1)
+    uri = os.environ.get('DATABASE_URL')
     key = os.getenv('SECRET_KEY')
     return render_template("_index.html", uri=uri, key=key)
 
