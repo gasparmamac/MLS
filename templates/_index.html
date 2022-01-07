@@ -12,6 +12,8 @@
                     <h1>This is your homepage {{ current_user.first_name }}</h1>
                 {% else %}
                     <h1>You are not logged in.</h1>
+                <h3>{{uri}}</h3>
+                <h3>{{key}}</h3>
 
                 {% endif %}
 
