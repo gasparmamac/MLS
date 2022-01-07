@@ -32,7 +32,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 Bootstrap(app)
 
 # Connect to database
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
+
+# heroku posgres-alchemy issue sol'n'( 'SQLAlchemy 1.4.x has removed support for the postgres:// URI scheme')
+uri = os.getenv('DATABASE_URL', 'sqlite:///lbc_dispatch.db')
+if uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = uri
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
@@ -1439,5 +1445,4 @@ def add_transaction(trans_date):
 
 
 if __name__ == "__main__":
-    app.run()
-
+    app.run(debug=True)
