@@ -50,13 +50,13 @@ csrf.init_app(app)
 class UserTable(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    email = db.Column(db.String(100), unique=True)
-    password = db.Column(db.String(100))
-    first_name = db.Column(db.String(100))
-    middle_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
-    extn_name = db.Column(db.String(100))
-    full_name = db.Column(db.String(100))
+    email = db.Column(db.String(250), unique=True)
+    password = db.Column(db.String(250))
+    first_name = db.Column(db.String(250))
+    middle_name = db.Column(db.String(250))
+    last_name = db.Column(db.String(250))
+    extn_name = db.Column(db.String(250))
+    full_name = db.Column(db.String(250))
     dispatch = relationship("DispatchTable", back_populates="encoder")
     admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
     maintenance = relationship("MaintenanceTable", back_populates="encoder")
@@ -65,12 +65,12 @@ class UserTable(UserMixin, db.Model):
 class DispatchTable(UserMixin, db.Model):
     __tablename__ = "dispatch"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    dispatch_date = db.Column(db.String(100), nullable=False)
-    wd_code = db.Column(db.String(100), nullable=False)
-    slip_no = db.Column(db.String(100), nullable=False)
-    route = db.Column(db.String(100), nullable=False)
+    dispatch_date = db.Column(db.String(250), nullable=False)
+    wd_code = db.Column(db.String(250), nullable=False)
+    slip_no = db.Column(db.String(250), nullable=False)
+    route = db.Column(db.String(250), nullable=False)
     area = db.Column(db.String(250))
-    destination = db.Column(db.String(100))
+    destination = db.Column(db.String(250))
     odo_start = db.Column(db.Integer)
     odo_end = db.Column(db.Integer)
     km = db.Column(db.Float(precision=1))
@@ -79,59 +79,60 @@ class DispatchTable(UserMixin, db.Model):
     drops = db.Column(db.Integer, nullable=False)
     std_rate = db.Column(db.Float(precision=1), nullable=False)
     rate = db.Column(db.Float(precision=1), nullable=False)
-    plate_no = db.Column(db.String(100), nullable=False)
-    driver = db.Column(db.String(100), nullable=False)
-    courier = db.Column(db.String(100), nullable=False)
-    forwarded_date = db.Column(db.String(100), nullable=False)
-    invoice_no = db.Column(db.String(100))
-    or_no = db.Column(db.String(100))
+    plate_no = db.Column(db.String(250), nullable=False)
+    driver = db.Column(db.String(250), nullable=False)
+    courier = db.Column(db.String(250), nullable=False)
+    forwarded_date = db.Column(db.String(250), nullable=False)
+    invoice_no = db.Column(db.String(250))
+    or_no = db.Column(db.String(250))
     or_amt = db.Column(db.Float(precision=1))
-    encoded_on = db.Column(db.String(100), nullable=False)
-    encoded_by = db.Column(db.String(100))
+    encoded_on = db.Column(db.String(250), nullable=False)
+    encoded_by = db.Column(db.String(250))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("UserTable", back_populates="dispatch")
+    date_settled = db.Column(db.String(250))
 
 
 class MaintenanceTable(UserMixin, db.Model):
     __tablename__ = "maintenance"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    date = db.Column(db.String(100), nullable=False)
-    plate_no = db.Column(db.String(100), nullable=False)
-    type = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    plate_no = db.Column(db.String(250), nullable=False)
+    type = db.Column(db.String(250), nullable=False)
     comment = db.Column(db.String(250), nullable=False)
     pyesa_amt = db.Column(db.Float(precision=1))
     tools_amt = db.Column(db.Float(precision=1))
     service_charge = db.Column(db.Float(precision=1))
     total_amt = db.Column(db.Float(precision=1))
-    encoded_by = db.Column(db.String(100))
+    encoded_by = db.Column(db.String(250))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("UserTable", back_populates="maintenance")
-    date_settled = db.Column(db.String(100))
+    date_settled = db.Column(db.String(250))
 
 
 class AdminExpenseTable(UserMixin, db.Model):
     __tablename__ = "admin"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    date = db.Column(db.String(100), nullable=False)
-    agency = db.Column(db.String(100), nullable=False)
-    office = db.Column(db.String(100), nullable=False)
-    frequency = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.String(250), nullable=False)
+    agency = db.Column(db.String(250), nullable=False)
+    office = db.Column(db.String(250), nullable=False)
+    frequency = db.Column(db.String(250), nullable=False)
     description = db.Column(db.String(250), nullable=False)
     amount = db.Column(db.Float(precision=1))
-    encoded_by = db.Column(db.String(100))
+    encoded_by = db.Column(db.String(250))
     encoder_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     encoder = relationship("UserTable", back_populates="admin_exp")
-    date_settled = db.Column(db.String(100))
+    date_settled = db.Column(db.String(250))
 
 
 class PayStripTable(UserMixin, db.Model):
     __tablename__ = "pay_strip"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    date_settled = db.Column(db.String(100))
-    start_date = db.Column(db.String(100), nullable=False)
-    end_date = db.Column(db.String(100), nullable=False)
-    employee_name = db.Column(db.String(100), nullable=False)
-    employee_id = db.Column(db.String(100), nullable=False)
+    date_settled = db.Column(db.String(250))
+    start_date = db.Column(db.String(250), nullable=False)
+    end_date = db.Column(db.String(250), nullable=False)
+    employee_name = db.Column(db.String(250), nullable=False)
+    employee_id = db.Column(db.String(250), nullable=False)
 
     # attendance
     normal = db.Column(db.Integer)
@@ -151,7 +152,7 @@ class PayStripTable(UserMixin, db.Model):
 
     # deduction
     cash_adv = db.Column(db.Float(precision=2))
-    ca_date = db.Column(db.String(100))
+    ca_date = db.Column(db.String(250))
     ca_deduction = db.Column(db.Float(precision=2))
     ca_remaining = db.Column(db.Float(precision=2))
     sss = db.Column(db.Float(precision=2))
@@ -169,9 +170,9 @@ class PayStripTable(UserMixin, db.Model):
     carry_over_next_month = db.Column(db.Float(precision=2))
     carry_over_past_month = db.Column(db.Float(precision=2))
 
-    gen_date = db.Column(db.String(100))
-    paid_by = db.Column(db.String(100))
-    dispatch_ids = db.Column(db.String(200))
+    gen_date = db.Column(db.String(250))
+    paid_by = db.Column(db.String(250))
+    dispatch_ids = db.Column(db.String(250))
 
 
 class EmployeeProfileTable(UserMixin, db.Model):
@@ -179,39 +180,39 @@ class EmployeeProfileTable(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, unique=True)
 
     # personal info
-    first_name = db.Column(db.String(100), nullable=False)
-    middle_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    extn_name = db.Column(db.String(100), nullable=False)
-    full_name = db.Column(db.String(100), nullable=False)
-    birthday = db.Column(db.String(100), nullable=False)
-    gender = db.Column(db.String(100), nullable=False)
-    contact_no = db.Column(db.String(100), nullable=False)
-    facebook = db.Column(db.String(100))
+    first_name = db.Column(db.String(250), nullable=False)
+    middle_name = db.Column(db.String(250), nullable=False)
+    last_name = db.Column(db.String(250), nullable=False)
+    extn_name = db.Column(db.String(250), nullable=False)
+    full_name = db.Column(db.String(250), nullable=False)
+    birthday = db.Column(db.String(250), nullable=False)
+    gender = db.Column(db.String(250), nullable=False)
+    contact_no = db.Column(db.String(250), nullable=False)
+    facebook = db.Column(db.String(250))
 
 
     # address
-    address = db.Column(db.String(100))
+    address = db.Column(db.String(250))
 
     # CompanyInfo
-    employee_id = db.Column(db.String(100))
-    date_hired = db.Column(db.String(100))
-    date_resigned = db.Column(db.String(100))
-    employment_status = db.Column(db.String(100))
-    position = db.Column(db.String(100))
-    rank = db.Column(db.String(100))
+    employee_id = db.Column(db.String(250))
+    date_hired = db.Column(db.String(250))
+    date_resigned = db.Column(db.String(250))
+    employment_status = db.Column(db.String(250))
+    position = db.Column(db.String(250))
+    rank = db.Column(db.String(250))
 
     # Benefits
-    sss_no = db.Column(db.String(100))
-    philhealth_no = db.Column(db.String(100))
-    pag_ibig_no = db.Column(db.String(100))
+    sss_no = db.Column(db.String(250))
+    philhealth_no = db.Column(db.String(250))
+    pag_ibig_no = db.Column(db.String(250))
     # benefits premiums
     sss_prem = db.Column(db.Float(precision=2))
     philhealth_prem = db.Column(db.Float(precision=2))
     pag_ibig_prem = db.Column(db.Float(precision=2))
     # deductions
     cash_adv = db.Column(db.Float(precision=2))
-    ca_date = db.Column(db.String(100))
+    ca_date = db.Column(db.String(250))
     ca_deduction = db.Column(db.Float(precision=2))
     ca_remaining = db.Column(db.Float(precision=2))
 
@@ -221,54 +222,54 @@ class EmployeeProfileTable(UserMixin, db.Model):
     allowance2 = db.Column(db.Float(precision=2))
     allowance3 = db.Column(db.Float(precision=2))
 
-    encoded_on = db.Column(db.String(100))
-    encoded_by = db.Column(db.String(100))
+    encoded_on = db.Column(db.String(250))
+    encoded_by = db.Column(db.String(250))
 
 
 class Tariff(db.Model, UserMixin):
     __tablename__ = 'tariff'
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    route = db.Column(db.String, nullable=True)
-    area = db.Column(db.String(100), nullable=True)
+    route = db.Column(db.String(250), nullable=True)
+    area = db.Column(db.String(250), nullable=True)
     km = db.Column(db.Float(precision=1))
-    vehicle = db.Column(db.String(100))
+    vehicle = db.Column(db.String(250))
     cbm = db.Column(db.Float(precision=1))
     rate = db.Column(db.Float(precision=1))
-    update = db.Column(db.String(50))
-    encoded_on = db.Column(db.String(50))
-    encoded_by = db.Column(db.String(50))
+    update = db.Column(db.String(250))
+    encoded_on = db.Column(db.String(250))
+    encoded_by = db.Column(db.String(250))
 
 
 class Invoice(db.Model, UserMixin):
     __tablename__ = 'invoice'
     id = db.Column(db.Integer, primary_key=True, unique=True)
     invoice_series = db.Column(db.Integer)
-    invoice_no = db.Column(db.String(100), unique=True)
-    slip_nos = db.Column(db.String)
-    plate_no = db.Column(db.String(10))
+    invoice_no = db.Column(db.String(250), unique=True)
+    slip_nos = db.Column(db.String(250))
+    plate_no = db.Column(db.String(250))
     dispatch_cnt = db.Column(db.Integer)
     gross_pay = db.Column(db.Float(precision=1))
     less = db.Column(db.Float(precision=1))
     amount_due = db.Column(db.Float(precision=1))
-    paid = db.Column(db.String(5))
-    or_no = db.Column(db.String(100))
-    issued_on = db.Column(db.String(100))
-    prepared_date = db.Column(db.String(100))
-    prepared_by = db.Column(db.String(100))
+    paid = db.Column(db.String(250))
+    or_no = db.Column(db.String(250))
+    issued_on = db.Column(db.String(250))
+    prepared_date = db.Column(db.String(250))
+    prepared_by = db.Column(db.String(250))
 
     # not displayed
-    dispatch_ids = db.Column(db.String(200))
+    dispatch_ids = db.Column(db.String(250))
 
 
 class Trasaction(db.Model, UserMixin):
     __tablename__ = "transaction"
     id = db.Column(db.Integer, primary_key=True, unique=True)
-    trans_date = db.Column(db.String(100))
-    paystrip_ids = db.Column(db.String(200))
-    maintenance_ids = db.Column(db.String(100))
-    admin_ids = db.Column(db.String(100))
-    by = db.Column(db.String(100))
-    on = db.Column(db.String(100))
+    trans_date = db.Column(db.String(250))
+    paystrip_ids = db.Column(db.String(250))
+    maintenance_ids = db.Column(db.String(250))
+    admin_ids = db.Column(db.String(250))
+    by = db.Column(db.String(250))
+    on = db.Column(db.String(250))
 
 
 # Run only once
@@ -1443,4 +1444,4 @@ def add_transaction(trans_date):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)

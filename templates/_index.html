@@ -3,23 +3,45 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
+{% include '_header.html' %}
 
-    {% include '_header.html' %}
-    <div class="container">
-        <div class="row align-text-center">
-            <div class="col">
-                {% if current_user.is_authenticated %}
-                    <h1>This is your homepage {{ current_user.first_name }}</h1>
-                {% else %}
-                    <h1>You are not logged in.</h1>
-
-
-                {% endif %}
-
+<section id="landing">
+    <div class="row">
+        <div class="card-item col-lg-4 col-md-6">
+        <div class="card">
+            <div class="card-header">
+              <h3>Dispatch</h3>
+            </div>
+            <div class="card-body">
+              <h2>Free</h2>
+              <p>5 Matches Per Day</p>
+              <p>10 Messages Per Day</p>
+              <p>Unlimited App Usage</p>
+              <div class="d-grid">
+              <button class="btn btn-lg btn-block btn-outline-dark" type="button">Sign Up</button>
+            </div>
             </div>
         </div>
-    </div>
+      </div>
 
+         <div class="card-item col-lg-4 col-md-6">
+        <div class="card">
+            <div class="card-header">
+              <h3>Dispatch</h3>
+            </div>
+            <div class="card-body">
+              <h2>Free</h2>
+              <p>5 Matches Per Day</p>
+              <p>10 Messages Per Day</p>
+              <p>Unlimited App Usage</p>
+              <div class="d-grid">
+              <button class="btn btn-lg btn-block btn-outline-dark" type="button">Sign Up</button>
+            </div>
+            </div>
+        </div>
+      </div>
+    </div>
+</section>
 
     {% include '_footer.html' %}
 
