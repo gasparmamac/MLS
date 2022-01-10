@@ -17,7 +17,7 @@ class RegisterForm(FlaskForm):
     first_name = StringField("First name", validators=[InputRequired(), Length(max=250, message='Input exceeds 250 characters')])
     middle_name = StringField("Middle name", validators=[InputRequired(), Length(max=250, message='Input exceeds 250 characters')])
     last_name = StringField("Last Name", validators=[InputRequired(), Length(max=250, message='Input exceeds 250 characters')])
-    extn_name = StringField("Extn name. (ex. Jr, Sr. III)", validators=[InputRequired(), Length(max=250, message='Input exceeds 250 characters')])
+    extn_name = StringField("Extn name. (ex. Jr, Sr. III)", validators=[Length(max=250, message='Input exceeds 250 characters')])
     submit = SubmitField("Register")
 
 

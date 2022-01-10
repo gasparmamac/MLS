@@ -291,7 +291,7 @@ def load_user(user_id):
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.id != 1:
+        if current_user.id >= 3:
             return abort(403)
         return f(*args, **kwargs)
     return decorated_function
@@ -304,6 +304,8 @@ def home():
 
 
 @app.route("/register", methods=["Get", "Post"])
+# @admin_only
+# @login_required
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
@@ -373,8 +375,8 @@ def logout():
 
 # Dispatch table--------------------------------------------------------
 @app.route("/dispatch_report", methods=["Get", "Post"])
-# @fresh_login_required
-# @admin_only
+@admin_only
+@login_required
 def dispatch():
     # create table filter form
     form = DispatchTableFilterForm()
@@ -398,8 +400,7 @@ def dispatch():
 
 
 @app.route("/input_dispatch", methods=["Get", "Post"])
-# @fresh_login_required
-# @admin_only
+@admin_only
 @login_required
 def input_dispatch():
     form = DispatchForm()
@@ -442,6 +443,7 @@ def input_dispatch():
 
 
 @app.route("/edit_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
+@admin_only
 @login_required
 def edit_dispatch(dispatch_id):
     dispatch_to_edit = DispatchTable.query.get(dispatch_id)
@@ -497,13 +499,15 @@ def edit_dispatch(dispatch_id):
         dispatch_to_edit.driver = edit_form.driver.data.title()
         dispatch_to_edit.courier = edit_form.courier.data.title()
         dispatch_to_edit.encoded_on = str(date.today().strftime("%Y-%m-%d-%a"))
-        dispatch_to_edit.encoded_by = current_user.first_name
+        dispatch_to_edit.encoded_by = current_user.full_name
         db.session.commit()
         return redirect(url_for("dispatch"))
     return render_template("dispatch_input.html", form=edit_form)
 
 
 @app.route("/delete_dispatch/<int:dispatch_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def delete_dispatch(dispatch_id):
     dispatch_to_delete = DispatchTable.query.get(dispatch_id)
     db.session.delete(dispatch_to_delete)
@@ -513,6 +517,8 @@ def delete_dispatch(dispatch_id):
 
 # Maintenance expenses table---------------------------------------------
 @app.route("/maintenance", methods=["Get", "Post"])
+@admin_only
+@login_required
 def maintenance():
     form = MaintenanceFilterForm()
     # Get all maintenance data from database
@@ -532,6 +538,8 @@ def maintenance():
 
 
 @app.route("/input_maintenance", methods=["Get", "Post"])
+@admin_only
+@login_required
 def input_maintenance():
     form = MaintenanceForm()
     if form.validate_on_submit():
@@ -545,7 +553,7 @@ def input_maintenance():
             tools_amt=form.tools_amt.data,
             service_charge=form.service_charge.data,
             total_amt=form.pyesa_amt.data + form.tools_amt.data + form.service_charge.data,
-            encoded_by=current_user.first_name.title(),
+            encoded_by=current_user.full_name.title(),
             date_settled='-'
         )
         db.session.add(new_record)
@@ -555,6 +563,8 @@ def input_maintenance():
 
 
 @app.route("/edit_maintenance/<int:maintenance_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def edit_maintenance(maintenance_id):
     maintenance_to_edit = MaintenanceTable.query.get(maintenance_id)
     # pre-load form
@@ -576,13 +586,15 @@ def edit_maintenance(maintenance_id):
         maintenance_to_edit.pyesa_amt = edit_form.pyesa_amt.data
         maintenance_to_edit.tools_amt = edit_form.tools_amt.data
         maintenance_to_edit.service_charge = edit_form.service_charge.data
-        maintenance_to_edit.encoded_by = current_user.first_name.title()
+        maintenance_to_edit.encoded_by = current_user.full_name.title()
         db.session.commit()
         return redirect(url_for('maintenance'))
     return render_template("maintenance_input.html", form=edit_form)
 
 
 @app.route("/delete_maintenance/<int:maintenance_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def delete_maintenance(maintenance_id):
     maintenance_to_delete = MaintenanceTable.query.get(maintenance_id)
     db.session.delete(maintenance_to_delete)
@@ -592,6 +604,8 @@ def delete_maintenance(maintenance_id):
 
 # Admin expenses--------------------------------------------------------
 @app.route("/admin", methods=["Get", "Post"])
+@admin_only
+@login_required
 def admin():
     form = AdminFilterForm()
     # Get all admin expenses data from database
@@ -610,6 +624,8 @@ def admin():
 
 
 @app.route("/input_admin", methods=["Get", "Post"])
+@admin_only
+@login_required
 def input_admin():
     form = AdminExpenseForm()
     if form.validate_on_submit():
@@ -621,7 +637,7 @@ def input_admin():
             frequency=form.frequency.data.title(),
             description=form.description.data.title(),
             amount=form.amount.data,
-            encoded_by=current_user.first_name.title(),
+            encoded_by=current_user.full_name.title(),
             date_settled='-'
         )
         db.session.add(new_record)
@@ -631,6 +647,8 @@ def input_admin():
 
 
 @app.route("/edit_admin/<int:admin_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def edit_admin(admin_id):
     admin_to_edit = AdminExpenseTable.query.get(admin_id)
     # pre-load form
@@ -650,13 +668,15 @@ def edit_admin(admin_id):
         admin_to_edit.frequency = edit_form.frequency.data.title()
         admin_to_edit.description = edit_form.description.data.title()
         admin_to_edit.amount = edit_form.amount.data
-        admin_to_edit.encoded_by = current_user.first_name.title()
+        admin_to_edit.encoded_by = current_user.full_name.title()
         db.session.commit()
         return redirect(url_for('admin'))
     return render_template("admin_input.html", form=edit_form)
 
 
 @app.route("/delete_admin/<int:admin_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def delete_admin(admin_id):
     admin_to_delete = AdminExpenseTable.query.get(admin_id)
     db.session.delete(admin_to_delete)
@@ -666,6 +686,8 @@ def delete_admin(admin_id):
 
 # Employee-------------------------------------------------------------
 @app.route("/employee_list", methods=["Get", "Post"])
+@admin_only
+@login_required
 def employees():
     # Get all employees data from database
     with create_engine(uri).connect() as cnx:
@@ -674,6 +696,8 @@ def employees():
 
 
 @app.route("/employee_add", methods=["Get", "Post"])
+@admin_only
+@login_required
 def employee_add():
     form = EmployeeEntryForm()
     if form.validate_on_submit():
@@ -723,6 +747,9 @@ def employee_add():
             allowance2=0,
             allowance3=0,
 
+            # others
+            encoded_on=datetime.today().strftime("%Y-%m-%d"),
+            encoded_by=current_user.full_name
         )
         db.session.add(new_employee)
         db.session.commit()
@@ -731,6 +758,8 @@ def employee_add():
 
 
 @app.route("/employee_edit/<int:employee_index>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def employee_edit(employee_index):
     employee_to_edit = EmployeeProfileTable.query.get(employee_index)
     # pre-load form
@@ -771,6 +800,8 @@ def employee_edit(employee_index):
 
 
 @app.route("/employee_admin_edit/<int:employee_index>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def employee_admin_edit(employee_index):
     employee_to_edit = EmployeeProfileTable.query.get(employee_index)
     # pre-load form
@@ -818,6 +849,8 @@ def employee_admin_edit(employee_index):
 
 
 @app.route("/employee_delete/<int:employee_index>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def employee_delete(employee_index):
     employee_to_delete = EmployeeProfileTable.query.get(employee_index)
     db.session.delete(employee_to_delete)
@@ -827,6 +860,8 @@ def employee_delete(employee_index):
 
 # Payroll---------------------------------------------------------------
 @app.route("/payroll", methods=["Get", "Post"])
+@admin_only
+@login_required
 def payroll():
     with create_engine(uri).connect() as cnx:
         raw = pd.read_sql_table(
@@ -855,6 +890,8 @@ def payroll():
 
 
 @app.route("/add_payroll", methods=["Get", "Post"])
+@admin_only
+@login_required
 def add_payroll():
     # step0: get fresh dispatch data
     # step1: group unpaid dispatch
@@ -986,11 +1023,15 @@ def add_payroll():
 
 
 @app.route("/adjust_paystrip/<int:strip_id>", methods=["Post", "Get"])
+@admin_only
+@login_required
 def adj_paystrip():
     pass
 
 
 @app.route("/delete_paystrip/<int:paystrip_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def delete_payroll(paystrip_id):
     payroll_to_delete = PayStripTable.query.get(paystrip_id)
     db.session.delete(payroll_to_delete)
@@ -1000,6 +1041,8 @@ def delete_payroll(paystrip_id):
 
 # tariff-----------------------------------------------------------------------------
 @app.route("/tariff", methods=["Get", "Post"])
+@admin_only
+@login_required
 def tariff():
     # get tariff data from database
     with create_engine(uri).connect() as cnx:
@@ -1008,6 +1051,8 @@ def tariff():
 
 
 @app.route("/add_tariff", methods=["Get", "Post"])
+@admin_only
+@login_required
 def add_tariff():
     form = TariffForm()
 
@@ -1030,6 +1075,8 @@ def add_tariff():
 
 
 @app.route("/edit_tariff/<int:tariff_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def edit_tariff(tariff_id):
     tariff_to_edit = Tariff.query.get(tariff_id)
 
@@ -1059,6 +1106,8 @@ def edit_tariff(tariff_id):
 
 
 @app.route("/delete_tariff/<int:tariff_id>", methods=["Get", "Post"])
+@admin_only
+@login_required
 def delete_tariff(tariff_id):
     tariff_to_delete = Tariff.query.get(tariff_id)
     db.session.delete(tariff_to_delete)
@@ -1067,6 +1116,8 @@ def delete_tariff(tariff_id):
 
 
 @app.route("/invoice", methods=["Get", "Post"])
+@admin_only
+@login_required
 def invoice():
     # get dispatch table
     with create_engine(uri).connect() as cnx:
@@ -1092,6 +1143,8 @@ def invoice():
 
 
 @app.route("/create_invoice/", methods=["Get", "Post"])
+@admin_only
+@login_required
 def add_invoice():
 
     # step0:
@@ -1137,6 +1190,8 @@ def add_invoice():
 
 
 @app.route("/print_invoice/<int:invoice_id>", methods=["Post", "Get"])
+@admin_only
+@login_required
 def print_invoice(invoice_id):
     # step1: get invoice target invoice
     invoice_to_print = Invoice.query.get(invoice_id)
@@ -1299,6 +1354,8 @@ def print_invoice(invoice_id):
 
 
 @app.route("/transaction", methods=["Post", "Get"])
+@admin_only
+@login_required
 def transaction():
     # step0: get fresh copy of paystrip, maintenance, admin
     # step1: count each unsettle items
@@ -1363,6 +1420,8 @@ def transaction():
 
 
 @app.route("/add_transaction/<trans_date>", methods=['Post', 'Get'])
+@admin_only
+@login_required
 def add_transaction(trans_date):
     # step0: get fresh copy of paystrip, maintenance, admin
     # step1: update date settled on paystrip, maint and admin tables
@@ -1433,6 +1492,7 @@ def add_transaction(trans_date):
     return redirect(url_for('transaction'))
 
 
+# ok_todo: 0 app view restriction
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
 # todo: 3. Deduction routine (C.A, SSS)
@@ -1444,4 +1504,4 @@ def add_transaction(trans_date):
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
