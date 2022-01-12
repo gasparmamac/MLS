@@ -84,6 +84,8 @@ def get_int_ids(str_id_list):
     str_num = ''
 
     for char in str_id_list:
+        if char == '[':
+            str_num = ''
         if char.isdigit():
             str_num += char
         elif char == ',':
@@ -97,6 +99,8 @@ def get_int_ids(str_id_list):
 def crete_paystrip():
     # step1:
     pass
+
+
 class PDF(FPDF):
     def footer(self):
         self.set_y(-15)

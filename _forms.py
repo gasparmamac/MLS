@@ -180,6 +180,7 @@ class TariffForm(FlaskForm):
         'Cbm',
         choices=[3, 5, 8, 15, 25], validators=[InputRequired()])
     rate = FloatField('Rate', validators=[InputRequired()])
+    diesel = FloatField('Diesel budget', validators=[InputRequired()])
     update = DateField('LBC tariff released date', validators=[InputRequired()])
     submit = SubmitField("Submit")
 

@@ -235,6 +235,7 @@ class Tariff(db.Model, UserMixin):
     vehicle = db.Column(db.String(250))
     cbm = db.Column(db.Float(precision=1))
     rate = db.Column(db.Float(precision=1))
+    diesel = db.Column(db.Float(precision=1))
     update = db.Column(db.String(250))
     encoded_on = db.Column(db.String(250))
     encoded_by = db.Column(db.String(250))
@@ -300,7 +301,41 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
-    return render_template("_index.html")
+    # step0: get fresh copy of dispatch
+    # step1: check if there's unpaid dispatch
+    # step2: group unpaid dispatch
+    # step3: regroup step2 per vehicle
+    # step4: display table
+
+# Dispatch
+    # step0
+    with create_engine(uri).connect() as cnx:
+        disp_df = pd.read_sql_table(table_name="dispatch", con=cnx, columns=[
+            'id', 'dispatch_date', 'plate_no', 'wd_code', 'slip_no', 'destination', 'driver', 'courier', 'forwarded_date'])
+
+    # step1
+    unpaid_cnt = is_found(disp_df["forwarded_date"], "-")
+    if unpaid_cnt > 0:
+        # step2
+        disp_grp = disp_df.groupby("forwarded_date").get_group("-")
+    else:
+        disp_grp = "none"
+
+
+# Invoice
+    # step0
+    with create_engine(uri).connect() as cnx:
+        inv_df = pd.read_sql_table(table_name="invoice", con=cnx, columns=[
+            'id', 'invoice_no', 'plate_no', 'dispatch_cnt', 'slip_nos', 'or_no'])
+
+    # step1
+    unpaid_inv_cnt = is_found(inv_df['or_no'], "-")
+    if unpaid_inv_cnt > 0:
+        inv_grp = inv_df.groupby("or_no").get_group("-")
+    else:
+        inv_grp = "none"
+
+    return render_template("_index.html", disp_grp=disp_grp, inv_grp=inv_grp, unpaid_inv_cnt=unpaid_inv_cnt, unpaid_cnt=unpaid_cnt)
 
 
 @app.route("/register", methods=["Get", "Post"])
@@ -375,7 +410,7 @@ def logout():
 
 # Dispatch table--------------------------------------------------------
 @app.route("/dispatch_report", methods=["Get", "Post"])
-@admin_only
+# @admin_only
 @login_required
 def dispatch():
     # create table filter form
@@ -434,7 +469,8 @@ def input_dispatch():
             forwarded_date='-',
             invoice_no='-',
             or_no='-',
-            or_amt=0
+            or_amt=0,
+            date_settled='-'
         )
         db.session.add(new_dispatch)
         db.session.commit()
@@ -554,7 +590,8 @@ def input_maintenance():
             service_charge=form.service_charge.data,
             total_amt=form.pyesa_amt.data + form.tools_amt.data + form.service_charge.data,
             encoded_by=current_user.full_name.title(),
-            date_settled='-'
+            date_settled='-',
+            encoder_id=current_user.id
         )
         db.session.add(new_record)
         db.session.commit()
@@ -587,6 +624,7 @@ def edit_maintenance(maintenance_id):
         maintenance_to_edit.tools_amt = edit_form.tools_amt.data
         maintenance_to_edit.service_charge = edit_form.service_charge.data
         maintenance_to_edit.encoded_by = current_user.full_name.title()
+        maintenance_to_edit.encoder_id = current_user.id
         db.session.commit()
         return redirect(url_for('maintenance'))
     return render_template("maintenance_input.html", form=edit_form)
@@ -638,7 +676,8 @@ def input_admin():
             description=form.description.data.title(),
             amount=form.amount.data,
             encoded_by=current_user.full_name.title(),
-            date_settled='-'
+            date_settled='-',
+            encoder_id=current_user.id
         )
         db.session.add(new_record)
         db.session.commit()
@@ -669,6 +708,7 @@ def edit_admin(admin_id):
         admin_to_edit.description = edit_form.description.data.title()
         admin_to_edit.amount = edit_form.amount.data
         admin_to_edit.encoded_by = current_user.full_name.title()
+        admin_to_edit.encoder_id = current_user.id
         db.session.commit()
         return redirect(url_for('admin'))
     return render_template("admin_input.html", form=edit_form)
@@ -875,18 +915,16 @@ def payroll():
     # check for unpaid dispatch
     unpaid_cnt = is_found(raw["forwarded_date"], "-")
     if unpaid_cnt > 0:
-        paid = False
         df = raw.groupby("forwarded_date").get_group("-").sort_values("dispatch_date", ascending=False)  # group of unpaid dispatches
 
     else:
-        paid = True
         df = raw.head(n=25).sort_values("dispatch_date", ascending=False)
 
     with create_engine(uri).connect() as cnx:
         strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
         pay_strip_df = strip_df.head(n=25).sort_values("gen_date", ascending=False)
 
-    return render_template("payroll.html", unpaid_df=df, pay_strip_df=pay_strip_df, paid=paid, unpaid_cnt=unpaid_cnt)
+    return render_template("payroll.html", unpaid_df=df, pay_strip_df=pay_strip_df, unpaid_cnt=unpaid_cnt)
 
 
 @app.route("/add_payroll", methods=["Get", "Post"])
@@ -1064,6 +1102,7 @@ def add_tariff():
             vehicle=form.vehicle.data.title(),
             cbm=form.cbm.data,
             rate=form.rate.data,
+            diesel=form.diesel.data,
             update=form.update.data.strftime("%B %Y"),
             encoded_on=date.today().strftime("%Y-%m-%d-%a"),
             encoded_by=current_user.full_name
@@ -1088,6 +1127,7 @@ def edit_tariff(tariff_id):
         vehicle=tariff_to_edit.vehicle,
         cbm=tariff_to_edit.cbm,
         rate=tariff_to_edit.rate,
+        diesel=tariff_to_edit.diesel,
         update=datetime.strptime(tariff_to_edit.update, "%B %Y")
     )
     if edit_form.validate_on_submit():
@@ -1097,6 +1137,7 @@ def edit_tariff(tariff_id):
         tariff_to_edit.vehicle = edit_form.vehicle.data.title()
         tariff_to_edit.cbm = edit_form.cbm.data
         tariff_to_edit.rate = edit_form.rate.data
+        tariff_to_edit.diesel = edit_form.diesel.data
         tariff_to_edit.update = edit_form.update.data.strftime("%B %Y")
         tariff_to_edit.encoded_on = str(date.today().strftime("%Y-%m-%d-%a"))
         tariff_to_edit.encoded_by = current_user.full_name
@@ -1358,11 +1399,16 @@ def print_invoice(invoice_id):
 @login_required
 def transaction():
     # step0: get fresh copy of paystrip, maintenance, admin
-    # step1: count each unsettle items
+    # step1: count each unsettled items
     # step2: create df for each table that has unsettled items
     # step3: display result
 
     # step0
+    with create_engine(uri).connect() as cnx:
+        df0 = pd.read_sql_table(
+            table_name="dispatch",
+            con=cnx,
+        )
     with create_engine(uri).connect() as cnx:
         df1 = pd.read_sql_table(
             table_name="pay_strip",
@@ -1378,16 +1424,45 @@ def transaction():
             table_name="admin",
             con=cnx,
         )
+    with create_engine(uri).connect() as cnx:
+        df4 = pd.read_sql_table(
+            table_name="tariff",
+            con=cnx,
+        )
 
     # step1
     if not df1[df1.date_settled == "-"].empty:
         paystrip_grp = df1.groupby('date_settled').get_group('-')
         payroll_ttl = paystrip_grp.net_pay.sum()
         pay_cnt = len(df1.date_settled.tolist())
+
+        # DIESEL computation
+        # append list of ids to a single list
+        list_of_id_list = [id_lst for id_lst in paystrip_grp.dispatch_ids]
+
+        # combine list-of-list into a list of string
+        cmb_id_list = []
+        for id_list in list_of_id_list:
+            cmb_id_list += id_list
+
+        # convert string list to int list then, get only the unique value
+        int_id_list = pd.Series(get_int_ids(cmb_id_list)).unique()
+        unpaid_disp_df = df0[df0.id.isin(int_id_list)]
+
+        # create dataframe for display
+        diesel_df = unpaid_disp_df.groupby('area')['plate_no'].value_counts().unstack(fill_value=0)
+        diesel_df.loc[:, 'Count'] = diesel_df.sum(axis=1, numeric_only=True)
+        df4.set_index('area', inplace=True)
+        diesel_df.loc[:, 'Budget'] = [df4.loc[row[0], 'diesel'] for row in diesel_df.itertuples()]
+        diesel_df.loc[:, 'Total'] = diesel_df['Budget'] * diesel_df['Count']
+        diesel_ttl = diesel_df.Total.sum()
+
     else:
         paystrip_grp = 'none'
         payroll_ttl = 0
         pay_cnt = 0
+        diesel_df = 'none'
+        diesel_ttl = 0
 
     if not df2[df2.date_settled == "-"].empty:
         maint_grp = df2.groupby('date_settled').get_group('-')
@@ -1409,13 +1484,13 @@ def transaction():
 
     # other contents
     trans_date = datetime.today().strftime('%Y-%m-%d %H:%M:%S')
-    grand_ttl = payroll_ttl + maint_ttl + admin_ttl
+    grand_ttl = payroll_ttl + diesel_ttl + maint_ttl + admin_ttl
     amt_in_words = num2words(grand_ttl).title() + ' pesos'
 
     return render_template('transaction.html',
                            pay_cnt=pay_cnt, maint_cnt=maint_cnt, admin_cnt=admin_cnt,
-                           paystrip_df=paystrip_grp, maint_df=maint_grp, admin_df=admin_grp,
-                           payroll_ttl=payroll_ttl, maint_ttl=maint_ttl, admin_ttl=admin_ttl, grand_ttl=grand_ttl,
+                           paystrip_df=paystrip_grp, maint_df=maint_grp, admin_df=admin_grp, diesel_df=diesel_df,
+                           payroll_ttl=payroll_ttl, diesel_ttl=diesel_ttl, maint_ttl=maint_ttl, admin_ttl=admin_ttl, grand_ttl=grand_ttl,
                            trans_date=trans_date, amt_in_words=amt_in_words)
 
 
@@ -1493,12 +1568,13 @@ def add_transaction(trans_date):
 
 
 # ok_todo: 0 app view restriction
+# todo: 0. diesel on transaction
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
 # todo: 3. Deduction routine (C.A, SSS)
 # todo: 4. table data display and filtering
 # todo: 5 app authorization
-# todo: 6 forgot password routine
+# todo: 6 forgot/change password routine
 # todo: 7 home page
 # todo: 8 tariff rate on dispatch table
 

@@ -37,18 +37,18 @@
                         <th scope="col">Name</th>
                         <th scope="col">From</th>
                         <th scope="col">To</th>
-                        <th scope="col">Normal(x1)</th>
-                        <th scope="col">Reg_Hol(x2)</th>
-                        <th scope="col">No_Sp_Hol(x1.3)</th>
-                        <th scope="col">Rd(x1.25)</th>
-                        <th scope="col">Equiv_wd</th>
+                        <th scope="col">Norm (x1)</th>
+                        <th scope="col">Reg Hol (x2)</th>
+                        <th scope="col">Non Sp (x1.3)</th>
+<!--                        <th scope="col">Rd (x1.25)</th>-->
+                        <th scope="col">Ttl wd</th>
                         <th scope="col">Basic</th>
                         <th scope="col">SSS</th>
-                        <th scope="col">CA deduct.</th>
+                        <th scope="col">CA</th>
                         <th scope="col">Pay adj</th>
                         <th scope="col">Pay adj reason</th>
                         <th scope="col">Gross Pay</th>
-                        <th scope="col">Total deduction</th>
+                        <th scope="col">Ttl deduct</th>
                         <th scope="col">Net Pay</th>
 
                     </tr>
@@ -62,7 +62,7 @@
                         <td>{{ row[7] }}</td>
                         <td>{{ row[8] }}</td>
                         <td>{{ row[9] }}</td>
-                        <td>{{ row[11] }}</td>
+<!--                        <td>{{ row[11] }}</td>-->
                         <td>{{ row[12] }}</td>
                         <td>{{ row[13] }}</td>
                         <td>{{ row[23] }}</td>
@@ -71,7 +71,7 @@
                         <td>{{ row[18] }}</td>
                         <td>{{ row[28] }}</td>
                         <td>{{ row[29] }}</td>
-                        <td class="fw-bold">{{ row[30] }}</td>
+                        <td>{{ row[30] }}</td>
                         {% endfor %}
                     </tr>
                     </tbody>
@@ -81,6 +81,40 @@
         {% else: %}
         <hr>
         <p class="text-center"> ---------- Payroll settled ----------</p>
+        <hr>
+        {% endif %}
+        <br>
+        </section>
+
+        <section id="Diesel">
+            <p><span class="fw-bold">Diesel Expenses</span> </p>
+            {% if pay_cnt > 0:%}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th scope="col">Area</th>
+                        {% for label in diesel_df.columns: %}
+                            <th scope="col">{{label}}</th>
+                        {% endfor %}
+
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for row in diesel_df.itertuples(): %}
+                    <tr>
+                        {% for item in row: %}
+                            <td>{{ item }}</td>
+                        {% endfor %}
+                        {% endfor %}
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        {% else: %}
+        <hr>
+        <p class="text-center"> ---------- Diesel settled ----------</p>
         <hr>
         {% endif %}
         <br>
@@ -113,7 +147,7 @@
                         <td>{{ row[6] }}</td>
                         <td>{{ row[7] }}</td>
                         <td>{{ row[8] }}</td>
-                        <td class="fw-bold">{{ row[9] }}</td>
+                        <td>{{ row[9] }}</td>
                         {% endfor %}
                     </tr>
                     </tbody>
@@ -151,7 +185,7 @@
                         <td>{{ row[4] }}</td>
                         <td>{{ row[5] }}</td>
                         <td>{{ row[6] }}</td>
-                        <td class="fw-bold">{{ row[7] }}</td>
+                        <td>{{ row[7] }}</td>
                         {% endfor %}
                     </tr>
                     </tbody>
@@ -173,6 +207,7 @@
                     <thead>
                     <tr>
                         <th scope="col">Payroll ttl</th>
+                        <th scope="col">Diesel ttl</th>
                         <th scope="col">Maintenance ttl</th>
                         <th scope="col">Admin ttl</th>
                         <th scope="col">Grand ttl</th>
@@ -181,9 +216,10 @@
                     <tbody>
                     <tr>
                         <td>{{ payroll_ttl }}</td>
+                        <td>{{ diesel_ttl}}</td>
                         <td>{{ maint_ttl }}</td>
                         <td>{{ admin_ttl }}</td>
-                        <td class="fw-bold">{{ grand_ttl }}</td>
+                        <td class="fw-bold text-danger">{{ grand_ttl }}</td>
 
                     </tr>
                     </tbody>
