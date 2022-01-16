@@ -190,6 +190,16 @@ class CashAdvForm(FlaskForm):
     date = DateField("C.A. Date", validators=[InputRequired()])
     amount = FloatField("Amount", validators=[InputRequired()])
     deduction = FloatField("Deduction", validators=[InputRequired()])
+    submit = SubmitField('Submit')
+
+
+class ChangePwForm(FlaskForm):
+    email = SelectField('Select email', validators=[InputRequired()])
+    pw = PasswordField("Enter new password", validators=[InputRequired()])
+    pw2 = PasswordField("Re-Enter new password", validators=[InputRequired()])
+    submit = SubmitField('Submit')
+
+
 
 
 

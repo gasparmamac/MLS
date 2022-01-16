@@ -10,6 +10,7 @@
         <div class="row justify-content-center">
             <div class="col col-lg-5 col-md-8 px-5 g-5">
 
+                {% if msg == "": %}
 <!--                flash messages-->
                  {% with messages = get_flashed_messages() %}
                     {% if messages %}
@@ -18,8 +19,12 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
-
                 {{ wtf.quick_form(form, novalidate=True, button_map={"submit": "primary"}) }}
+
+                {% else: %}
+                <h3>{{ msg }}</h3>
+                {% endif %}
+
             </div>
         </div>
     </div>

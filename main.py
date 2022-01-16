@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, abort, flash, reque
 from flask_bootstrap import Bootstrap
 from flask_login import UserMixin, login_user, LoginManager, fresh_login_required, login_required, \
     current_user, logout_user
-from flask_wtf import csrf, CSRFProtect
+from flask_wtf import CSRFProtect
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
@@ -57,6 +57,7 @@ class UserTable(UserMixin, db.Model):
     last_name = db.Column(db.String(250))
     extn_name = db.Column(db.String(250))
     full_name = db.Column(db.String(250))
+    admin = db.Column(db.String(250))
     dispatch = relationship("DispatchTable", back_populates="encoder")
     admin_exp = relationship("AdminExpenseTable", back_populates="encoder")
     maintenance = relationship("MaintenanceTable", back_populates="encoder")
@@ -301,14 +302,25 @@ def admin_only(f):
 # Login-logout-------------------------------------------------------
 @app.route("/", methods=["Get", "Post"])
 def home():
+
     # step0: get fresh copy of dispatch
     # step1: check if there's unpaid dispatch
     # step2: group unpaid dispatch
     # step3: regroup step2 per vehicle
     # step4: display table
 
-# Dispatch
+    # First user
     # step0
+    with create_engine(uri).connect() as cnx:
+        user = pd.read_sql_table(table_name="users", con=cnx)
+    no_user = user.dropna().empty
+    if no_user:
+        return redirect(url_for('register'))
+    elif not current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+
+# Dispatch
     with create_engine(uri).connect() as cnx:
         disp_df = pd.read_sql_table(table_name="dispatch", con=cnx, columns=[
             'id', 'dispatch_date', 'plate_no', 'wd_code', 'slip_no', 'destination', 'driver', 'courier', 'forwarded_date'])
@@ -339,8 +351,6 @@ def home():
 
 
 @app.route("/register", methods=["Get", "Post"])
-# @admin_only
-# @login_required
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
@@ -371,7 +381,8 @@ def register():
             last_name=form.last_name.data.title(),
             extn_name=form.extn_name.data.title(),
             full_name=full_name,
-            password=hashed_and_salted_password
+            password=hashed_and_salted_password,
+            admin='False'
         )
         db.session.add(new_user)
         db.session.commit()
@@ -922,7 +933,13 @@ def payroll():
 
     with create_engine(uri).connect() as cnx:
         strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
-        pay_strip_df = strip_df.head(n=25).sort_values("gen_date", ascending=False)
+
+    # check for unsettled
+    unsettled = is_found(strip_df['date_settled'], '-')
+    if unsettled > 0:
+        pay_strip_df = strip_df.groupby("date_settled").get_group('-').sort_values('gen_date', ascending=True)
+    else:
+        pay_strip_df = strip_df.head(n=10).sort_values("date_settled", ascending=True)
 
     return render_template("payroll.html", unpaid_df=df, pay_strip_df=pay_strip_df, unpaid_cnt=unpaid_cnt)
 
@@ -1172,15 +1189,21 @@ def invoice():
             table_name="invoice",
             con=cnx,
         )
+    # check unpaid invoice
+    unpaid_inv = is_found(inv_df["or_no"], "-")
+    if unpaid_inv > 0:
+        invoice_df = inv_df.groupby("or_no").get_group("-").sort_values("prepared_date", ascending=True)
+    else:
+        invoice_df = inv_df.head(5).sort_values("issued_on", ascending=True)
 
     # check for no invoice no
     inv_cnt = is_found(disp_df["invoice_no"], "-")
     if inv_cnt > 0:
         dispatch_df = disp_df.groupby("invoice_no").get_group("-").sort_values("plate_no", ascending=False)
     else:
-        dispatch_df = disp_df.groupby("invoice_no").all()
+        dispatch_df = 'none'
 
-    return render_template('invoice_data.html', dispatch_df=dispatch_df, invoice_df=inv_df, no_invoice_cnt=inv_cnt, )
+    return render_template('invoice_data.html', dispatch_df=dispatch_df, invoice_df=invoice_df, no_invoice_cnt=inv_cnt, )
 
 
 @app.route("/create_invoice/", methods=["Get", "Post"])
@@ -1567,17 +1590,40 @@ def add_transaction(trans_date):
     return redirect(url_for('transaction'))
 
 
+@app.route("/recover_pw", methods=['Get', 'Post'])
+@admin_only
+@fresh_login_required
+def recover_pw():
+    form = ChangePwForm()
+    msg = ''
+
+    # show existing user email
+    form.email.choices = [this_user.email for this_user in UserTable.query.order_by("last_name") ]
+
+    # update use password
+    if form.validate_on_submit():
+        # check if entered pws are identical
+        if form.pw.data == form.pw2.data:
+            # create new hash and salted password
+            new_pw = generate_password_hash(form.pw2.data, method="pbkdf2:sha256", salt_length=8)
+            user_to_edit = UserTable.query.filter_by(email=form.email.data).first()
+            user_to_edit.password = new_pw
+            db.session.commit()
+            msg = "Password change successful!"
+            return render_template('recover.html', msg=msg)
+
+        else:
+            flash('Password did not match')
+            return redirect(url_for('recover_pw'))
+    return render_template('recover.html', form=form, msg=msg)
+
+
 # ok_todo: 0 app view restriction
-# todo: 0. diesel on transaction
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
 # todo: 3. Deduction routine (C.A, SSS)
-# todo: 4. table data display and filtering
-# todo: 5 app authorization
-# todo: 6 forgot/change password routine
-# todo: 7 home page
 # todo: 8 tariff rate on dispatch table
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
