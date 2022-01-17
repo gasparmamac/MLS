@@ -52,9 +52,9 @@
                 </tbody>
             </table>
             {% if unpaid_cnt == 0:%}
-            <a href="{{ url_for('add_payroll')}}" class="btn btn-primary disabled">Forward to paystrip</a>
+            <a href="{{ url_for('add_payroll')}}">Forward to paystrip</a>
             {% else: %}
-             <a href="{{ url_for('add_payroll')}}" class="btn btn-primary">Forward to paystrip</a>
+             <a href="{{ url_for('add_payroll')}}">Forward to paystrip</a>
             {% endif %}
         </div>
         <br>
@@ -65,7 +65,7 @@
                 <thead>
                 <tr>
                     <th scope="col">Date_settled</th>
-                    <th scope="col">Date generated</th>
+                    <th scope="col">Forwarded on</th>
                     <th scope="col">Name</th>
                     <th scope="col">From</th>
                     <th scope="col">To</th>
@@ -91,7 +91,7 @@
                     <th scope="col">Total pay</th>
                     <th scope="col">Total deduction</th>
                     <th scope="col">Net Pay</th>
-                    <th scope="col">Paid by</th>
+                    <th scope="col">Forwarded by</th>
                     <th scope="col">Dispatch ids</th>
                     <th scope="col">*</th>
                     <th scope="col">**</th>

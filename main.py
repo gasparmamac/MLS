@@ -309,16 +309,15 @@ def home():
     # step3: regroup step2 per vehicle
     # step4: display table
 
-    # First user
-    # step0
-    with create_engine(uri).connect() as cnx:
-        user = pd.read_sql_table(table_name="users", con=cnx)
-    no_user = user.dropna().empty
+    # First check user
+    with create_engine(uri).connect() as cnx1:
+        _user = pd.read_sql_table(table_name="users", con=cnx1)
+    no_user = _user.dropna().empty
+
     if no_user:
         return redirect(url_for('register'))
     elif not current_user.is_authenticated:
         return redirect(url_for('login'))
-
 
 # Dispatch
     with create_engine(uri).connect() as cnx:
@@ -424,6 +423,20 @@ def logout():
 # @admin_only
 @login_required
 def dispatch():
+    # check employee and tariff
+    with create_engine(uri).connect() as cnx2:
+        _tariff = pd.read_sql_table(table_name="tariff", con=cnx2)
+    with create_engine(uri).connect() as cnx3:
+        _emp = pd.read_sql_table(table_name="employee", con=cnx3)
+
+    no_tariff = _tariff.dropna().empty
+    no_emp = _emp.dropna().empty
+
+    if no_emp:
+        return redirect(url_for('employee_add'))
+    elif no_tariff:
+        return redirect((url_for('add_tariff')))
+
     # create table filter form
     form = DispatchTableFilterForm()
 
@@ -442,7 +455,7 @@ def dispatch():
         index = form.filter.data
         filtered_df = df[(df[index] >= str(start)) & (df[index] <= str(end))].sort_values(index, ascending=False)
         return render_template("dispatch_data.html", form=form, df=filtered_df)
-    return render_template("dispatch_data.html", form=form, df=sorted_df)
+    return render_template("dispatch_data.html", form=form, df=sorted_df, no_emp=no_emp, no_tariff=no_tariff)
 
 
 @app.route("/input_dispatch", methods=["Get", "Post"])
@@ -455,6 +468,10 @@ def input_dispatch():
     form.area.choices = [a.area for a in Tariff.query.order_by("area")]
 
     if form.validate_on_submit():
+        # get tariff rate
+        area = Tariff.query.filter_by(area=form.area.data).first()
+        std_rate = area.rate
+
         # Add new dispatch to database
         new_dispatch = DispatchTable(
             dispatch_date=form.dispatch_date.data.strftime("%Y-%m-%d-%a"),
@@ -470,7 +487,7 @@ def input_dispatch():
             qty=form.qty.data,
             drops=form.drops.data,
             rate=form.rate.data,
-            std_rate=0,
+            std_rate=std_rate,
             plate_no=form.plate_no.data.upper(),
             driver=form.driver.data.title(),
             courier=form.courier.data.title(),
@@ -508,7 +525,6 @@ def edit_dispatch(dispatch_id):
         qty=dispatch_to_edit.qty,
         drops=dispatch_to_edit.drops,
         rate=dispatch_to_edit.rate,
-        std_rate=0,
         plate_no=dispatch_to_edit.plate_no,
     )
     # choices for select field
@@ -525,14 +541,15 @@ def edit_dispatch(dispatch_id):
     edit_form.courier.choices = choices1
     edit_form.area.choices = choices2
 
-    route = "-"
-
     # load back edited form data to db
     if edit_form.validate_on_submit():
+        # get area details
+        area = Tariff.query.filter_by(area=edit_form.area.data).first()
+
         dispatch_to_edit.dispatch_date = edit_form.dispatch_date.data.strftime("%Y-%m-%d-%a")
         dispatch_to_edit.wd_code = edit_form.wd_code.data
         dispatch_to_edit.slip_no = edit_form.slip_no.data
-        dispatch_to_edit.route = route
+        dispatch_to_edit.route = area.route
         dispatch_to_edit.area = edit_form.area.data.title()
         dispatch_to_edit.destination = edit_form.destination.data.title()
         dispatch_to_edit.odo_start = edit_form.odo_start.data
@@ -542,6 +559,7 @@ def edit_dispatch(dispatch_id):
         dispatch_to_edit.qty = edit_form.qty.data
         dispatch_to_edit.drops = edit_form.drops.data
         dispatch_to_edit.rate = edit_form.rate.data
+        dispatch_to_edit.std_rate = area.rate
         dispatch_to_edit.plate_no = edit_form.plate_no.data.upper()
         dispatch_to_edit.driver = edit_form.driver.data.title()
         dispatch_to_edit.courier = edit_form.courier.data.title()
@@ -1581,7 +1599,7 @@ def add_transaction(trans_date):
         paystrip_ids=str(paystrip_ids),
         maintenance_ids=str(maint_ids),
         admin_ids=str(admin_ids),
-        by='Gaspar',
+        by=current_user.full_name,
         on=datetime.today().strftime('%Y-%m-%d')
     )
     db.session.add(new_trans)
@@ -1626,4 +1644,4 @@ def recover_pw():
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)

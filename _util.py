@@ -1,4 +1,6 @@
 from datetime import datetime
+
+from flask_login import current_user
 from fpdf import FPDF
 
 
@@ -56,7 +58,7 @@ def create_invoice(invoice_df, dispatch_df):
         or_no = '-'
         issued_on = '-'
         prepared_date = datetime.today().strftime("%Y-%m-%d")
-        prepared_by = 'Gaspar'
+        prepared_by = current_user.full_name
         dispatch_ids = this_df.id.tolist()
         invoice = {
             'invoice_series': ser_num,

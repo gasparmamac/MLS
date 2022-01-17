@@ -51,9 +51,9 @@
                 </tbody>
             </table>
             {% if no_invoice_cnt == 0: %}
-            <a class="btn btn-primary disabled" href="{{ url_for('add_invoice', dispatch_ids=dispatch_ids) }}">Create invoice</a>
+            <a href="{{ url_for('add_invoice', dispatch_ids=dispatch_ids) }}">Create invoice</a>
             {% else: %}
-            <a class="btn btn-primary" href="{{ url_for('add_invoice', dispatch_ids=dispatch_ids) }}">Create invoice</a>
+            <a href="{{ url_for('add_invoice', dispatch_ids=dispatch_ids) }}">Create invoice</a>
             {% endif %}
         </div>
         <br>
