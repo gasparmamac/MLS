@@ -1640,8 +1640,7 @@ def recover_pw():
 # todo: 1. O.R. number and amount update for lbc payment
 # todo: 2.Pay adj routine
 # todo: 3. Deduction routine (C.A, SSS)
-# todo: 8 tariff rate on dispatch table
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
