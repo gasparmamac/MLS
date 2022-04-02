@@ -313,7 +313,7 @@ def home():
     # step4: display table
 
     # First check user
-    _user = pd.read_sql_table(table_name="users", con=db.engnine)
+    _user = pd.read_sql_table(table_name="users", con=db.engine)
     no_user = _user.dropna().empty
 
     if no_user:
