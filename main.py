@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from flask_sqlalchemy import SQLAlchemy
+
 # email
 import smtplib
 from email.mime.text import MIMEText
@@ -195,7 +196,7 @@ class EmployeeProfileTable(UserMixin, db.Model):
 
 
     # address
-    address = db.Column(db.String(250))
+    address = db.Column(db.String(250), nullable=False)
 
     # CompanyInfo
     employee_id = db.Column(db.String(250))
@@ -312,8 +313,7 @@ def home():
     # step4: display table
 
     # First check user
-    with create_engine(uri).connect() as cnx1:
-        _user = pd.read_sql_table(table_name="users", con=cnx1)
+    _user = pd.read_sql_table(table_name="users", con=db.engnine)
     no_user = _user.dropna().empty
 
     if no_user:
@@ -322,9 +322,9 @@ def home():
         return redirect(url_for('login'))
 
 # Dispatch
-    with create_engine(uri).connect() as cnx:
-        disp_df = pd.read_sql_table(table_name="dispatch", con=cnx, columns=[
-            'id', 'dispatch_date', 'plate_no', 'wd_code', 'slip_no', 'destination', 'driver', 'courier', 'forwarded_date'])
+
+    disp_df = pd.read_sql_table(table_name="dispatch", con=db.engine, columns=[
+        'id', 'dispatch_date', 'plate_no', 'wd_code', 'slip_no', 'destination', 'driver', 'courier', 'forwarded_date'])
 
     # step1
     unpaid_cnt = is_found(disp_df["forwarded_date"], "-")
@@ -337,9 +337,9 @@ def home():
 
 # Invoice
     # step0
-    with create_engine(uri).connect() as cnx:
-        inv_df = pd.read_sql_table(table_name="invoice", con=cnx, columns=[
-            'id', 'invoice_no', 'plate_no', 'dispatch_cnt', 'slip_nos', 'or_no'])
+
+    inv_df = pd.read_sql_table(table_name="invoice", con=db.engine, columns=[
+        'id', 'invoice_no', 'plate_no', 'dispatch_cnt', 'slip_nos', 'or_no'])
 
     # step1
     unpaid_inv_cnt = is_found(inv_df['or_no'], "-")
@@ -426,10 +426,9 @@ def logout():
 @login_required
 def dispatch():
     # check employee and tariff
-    with create_engine(uri).connect() as cnx2:
-        _tariff = pd.read_sql_table(table_name="tariff", con=cnx2)
-    with create_engine(uri).connect() as cnx3:
-        _emp = pd.read_sql_table(table_name="employee", con=cnx3)
+
+    _tariff = pd.read_sql_table(table_name="tariff", con=db.engine)
+    _emp = pd.read_sql_table(table_name="employee", con=db.engine)
 
     no_tariff = _tariff.dropna().empty
     no_emp = _emp.dropna().empty
@@ -443,8 +442,8 @@ def dispatch():
     form = DispatchTableFilterForm()
 
     # Get all dispatch data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="dispatch", con=cnx)
+
+    df = pd.read_sql_table(table_name="dispatch", con=db.engine)
 
     # Dispatch data
     sorted_df = df.head(n=25).sort_values("dispatch_date", ascending=False)
@@ -589,8 +588,8 @@ def delete_dispatch(dispatch_id):
 def maintenance():
     form = MaintenanceFilterForm()
     # Get all maintenance data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="maintenance", con=cnx)
+
+    df = pd.read_sql_table(table_name="maintenance", con=db.engine)
 
     sorted_df = df.head(n=10).sort_values("date", ascending=False)
     if form.validate_on_submit():
@@ -678,8 +677,8 @@ def delete_maintenance(maintenance_id):
 def admin():
     form = AdminFilterForm()
     # Get all admin expenses data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="admin", con=cnx)
+
+    df = pd.read_sql_table(table_name="admin", con=db.engine)
 
     sorted_df = df.head(n=10).sort_values("date", ascending=False)
     if form.validate_on_submit():
@@ -761,8 +760,7 @@ def delete_admin(admin_id):
 @login_required
 def employees():
     # Get all employees data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="employee", con=cnx)
+    df = pd.read_sql_table(table_name="employee", con=db.engine)
     return render_template("employees_data.html", df=df)
 
 
@@ -934,15 +932,15 @@ def employee_delete(employee_index):
 @admin_only
 @login_required
 def payroll():
-    with create_engine(uri).connect() as cnx:
-        raw = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx, index_col='dispatch_date',
-            columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
-                     'area', 'destination', 'cbm', 'qty', 'drops', 'plate_no',
-                     'driver', 'courier', 'forwarded_date'
-                     ],
-        )
+
+    raw = pd.read_sql_table(
+        table_name="dispatch",
+        con=db.engine, index_col='dispatch_date',
+        columns=['id', 'dispatch_date', 'wd_code', 'slip_no',
+                 'area', 'destination', 'cbm', 'qty', 'drops', 'plate_no',
+                 'driver', 'courier', 'forwarded_date'
+                 ],
+    )
     # check for unpaid dispatch
     unpaid_cnt = is_found(raw["forwarded_date"], "-")
     if unpaid_cnt > 0:
@@ -951,8 +949,7 @@ def payroll():
     else:
         df = raw.head(n=25).sort_values("dispatch_date", ascending=False)
 
-    with create_engine(uri).connect() as cnx:
-        strip_df = pd.read_sql_table(table_name="pay_strip", con=cnx)
+    strip_df = pd.read_sql_table(table_name="pay_strip", con=db.engine)
 
     # check for unsettled
     unsettled = is_found(strip_df['date_settled'], '-')
@@ -974,11 +971,10 @@ def add_payroll():
     # step3: create paystrip per column labels (or per employee)
 
     # step0
-    with create_engine(uri).connect() as cnx:
-        raw = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx, index_col='dispatch_date',
-        )
+    raw = pd.read_sql_table(
+        table_name="dispatch",
+        con=db.engine, index_col='dispatch_date',
+    )
 
     # step1
     unpaid_df = raw.groupby("forwarded_date").get_group("-")  # group of unpaid dispatches
@@ -1120,8 +1116,7 @@ def delete_payroll(paystrip_id):
 @login_required
 def tariff():
     # get tariff data from database
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="tariff", con=cnx)
+    df = pd.read_sql_table(table_name="tariff", con=db.engine)
     return render_template("tariff_data.html", df=df)
 
 
@@ -1198,17 +1193,15 @@ def delete_tariff(tariff_id):
 @login_required
 def invoice():
     # get dispatch table
-    with create_engine(uri).connect() as cnx:
-        disp_df = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx,
-        )
+    disp_df = pd.read_sql_table(
+        table_name="dispatch",
+        con=db.engine,
+    )
     # get invoice table
-    with create_engine(uri).connect() as cnx:
-        inv_df = pd.read_sql_table(
-            table_name="invoice",
-            con=cnx,
-        )
+    inv_df = pd.read_sql_table(
+        table_name="invoice",
+        con=db.engine,
+    )
     # check unpaid invoice
     unpaid_inv = is_found(inv_df["or_no"], "-")
     if unpaid_inv > 0:
@@ -1232,16 +1225,8 @@ def invoice():
 def add_invoice():
 
     # step0:
-    with create_engine(uri).connect() as cnx:
-        invoice_df = pd.read_sql_table(
-            table_name="invoice",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        dispatch_df = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx,
-        )
+    invoice_df = pd.read_sql_table(table_name="invoice", con=db.engine,)
+    dispatch_df = pd.read_sql_table(table_name="dispatch", con=db.engine,)
     invoice_list = create_invoice(invoice_df, dispatch_df)
     for invoice_item in invoice_list:
         new_invoice = Invoice(
@@ -1287,8 +1272,7 @@ def print_invoice(invoice_id):
     inv_date = date.today()
 
     # step2: get fresh copy of dispatch
-    with create_engine(uri).connect() as cnx:
-        df = pd.read_sql_table(table_name="dispatch", con=cnx,)
+    df = pd.read_sql_table(table_name="dispatch", con=db.engine,)
 
     # step3: retrieve dispatch with the following ids]
     print_this = df[df.id.isin(ids)]
@@ -1447,31 +1431,11 @@ def transaction():
     # step3: display result
 
     # step0
-    with create_engine(uri).connect() as cnx:
-        df0 = pd.read_sql_table(
-            table_name="dispatch",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df1 = pd.read_sql_table(
-            table_name="pay_strip",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df2 = pd.read_sql_table(
-            table_name="maintenance",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df3 = pd.read_sql_table(
-            table_name="admin",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df4 = pd.read_sql_table(
-            table_name="tariff",
-            con=cnx,
-        )
+    df0 = pd.read_sql_table(table_name="dispatch", con=db.engine)
+    df1 = pd.read_sql_table(table_name="pay_strip", con=db.engine)
+    df2 = pd.read_sql_table(table_name="maintenance", con=db.engine)
+    df3 = pd.read_sql_table(table_name="admin", con=db.engine)
+    df4 = pd.read_sql_table(table_name="tariff", con=db.engine)
 
     # step1
     if not df1[df1.date_settled == "-"].empty:
@@ -1546,21 +1510,10 @@ def add_transaction(trans_date):
     # step2: update trasaction table
 
     # step0:
-    with create_engine(uri).connect() as cnx:
-        df1 = pd.read_sql_table(
-            table_name="pay_strip",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df2 = pd.read_sql_table(
-            table_name="maintenance",
-            con=cnx,
-        )
-    with create_engine(uri).connect() as cnx:
-        df3 = pd.read_sql_table(
-            table_name="admin",
-            con=cnx,
-        )
+
+    df1 = pd.read_sql_table(table_name="pay_strip", con=db.engine,)
+    df2 = pd.read_sql_table(table_name="maintenance", con=db.engine,)
+    df3 = pd.read_sql_table(table_name="admin", con=db.engine,)
 
     # step1
     # update paystrip settled date
@@ -1645,4 +1598,4 @@ def recover_pw():
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True)
